@@ -1,17 +1,426 @@
 <!DOCTYPE html>
-<html lang="en">
-  <head>
-    <meta charset="utf-8">
-    <meta http-equiv="X-UA-Compatible" content="IE=edge">
-    <meta name="viewport" content="width=device-width,initial-scale=1.0">
-    <link rel="icon" href="<%= BASE_URL %>favicon.ico">
-    <title><%= htmlWebpackPlugin.options.title %></title>
-  </head>
-  <body>
-    <noscript>
-      <strong>We're sorry but <%= htmlWebpackPlugin.options.title %> doesn't work properly without JavaScript enabled. Please enable it to continue.</strong>
-    </noscript>
-    <div id="app"></div>
-    <!-- built files will be auto injected -->
-  </body>
+<html lang="en-US">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+  <link rel="profile" href="http://gmpg.org/xfn/11">
+  <link rel="pingback" href="https://controller.phila.gov/xmlrpc.php">
+
+
+
+  <title>Gun Violence Dashboard</title>
+
+  <style type="text/css">
+    img.wp-smiley,
+    img.emoji {
+      display: inline !important;
+      border: none !important;
+      box-shadow: none !important;
+      height: 1em !important;
+      width: 1em !important;
+      margin: 0 .07em !important;
+      vertical-align: -0.1em !important;
+      background: none !important;
+      padding: 0 !important;
+    }
+  </style>
+  <link rel='stylesheet' id='wp-block-library-css'
+    href='https://3og1cv1uvq3u3skase2jhb69-wpengine.netdna-ssl.com/wp-includes/css/dist/block-library/style.min.css?ver=5.5'
+    type='text/css' media='all' />
+  <link rel='stylesheet' id='yikes-starter-style-css'
+    href='https://3og1cv1uvq3u3skase2jhb69-wpengine.netdna-ssl.com/wp-content/themes/philacontroller/style.min.css?ver=1.1'
+    type='text/css' media='all' />
+  <link rel='stylesheet' id='yikes-bootstrap-style-css'
+    href='https://3og1cv1uvq3u3skase2jhb69-wpengine.netdna-ssl.com/wp-content/themes/philacontroller/inc/bootstrap/css/bootstrap.min.css?ver=all'
+    type='text/css' media='all' />
+  <link rel='stylesheet' id='google-fonts-css'
+    href='//fonts.googleapis.com/css?family=Open+Sans%3A400%2C600%2C700&#038;ver=all' type='text/css' media='' />
+  <link rel='stylesheet' id='google-fonts2-css'
+    href='//fonts.googleapis.com/css?family=Montserrat%3A400%2C500%2C700&#038;ver=all' type='text/css' media='' />
+  <link rel='stylesheet' id='yikes-animate-style-css'
+    href='https://3og1cv1uvq3u3skase2jhb69-wpengine.netdna-ssl.com/wp-content/themes/philacontroller/inc/css/animate.css?ver=all'
+    type='text/css' media='' />
+  <link rel='stylesheet' id='yikes-tablesaw-style-css'
+    href='https://3og1cv1uvq3u3skase2jhb69-wpengine.netdna-ssl.com/wp-content/themes/philacontroller/inc/css/tablesaw.min.css?ver=all'
+    type='text/css' media='all' />
+  <script type='text/javascript'
+    src='https://3og1cv1uvq3u3skase2jhb69-wpengine.netdna-ssl.com/wp-includes/js/jquery/jquery.js?ver=1.12.4-wp'
+    id='jquery-js'></script>
+  <script type='text/javascript' data-search-pseudo-elements
+    src='https://3og1cv1uvq3u3skase2jhb69-wpengine.netdna-ssl.com/wp-content/themes/philacontroller/inc/js/fontawesome-all.min.js?ver=all'
+    id='yikes-fontawesome-script-js'></script>
+  <script type='text/javascript'
+    src='https://3og1cv1uvq3u3skase2jhb69-wpengine.netdna-ssl.com/wp-content/themes/philacontroller/inc/js/tablesaw.min.js?ver=5.5'
+    id='yikes-tablesaw-script-js'></script>
+  <script type='text/javascript'
+    src='https://3og1cv1uvq3u3skase2jhb69-wpengine.netdna-ssl.com/wp-content/themes/philacontroller/inc/js/tablesaw-init.min.js?ver=5.5'
+    id='yikes-tablesaw-init-script-js'></script>
+  <link rel="icon"
+    href="https://3og1cv1uvq3u3skase2jhb69-wpengine.netdna-ssl.com/wp-content/uploads/2018/04/crest-150x150.png"
+    sizes="32x32" />
+</head>
+
+<body class="pocaudits-template-default single single-pocaudits postid-2871 wp-custom-logo group-blog">
+
+  <header id="masthead" class="site-header" role="banner">
+
+    <nav id="site-navigation" class="navbar navbar-expand-sm navbar-light main-nav
+					fixed-top
+			" role="navigation">
+      <div class="container">
+        <div class="col-sm-4 header-nav-logo">
+          <div class="row align-items-center">
+            <div class="col-sm-2">
+              <div class="header-logo">
+                <a href="https://controller.phila.gov/" class="custom-logo-link" rel="home"><img width="160"
+                    height="160"
+                    src="https://3og1cv1uvq3u3skase2jhb69-wpengine.netdna-ssl.com/wp-content/uploads/2018/04/crest.png"
+                    class="custom-logo" alt="Office of the Controller" loading="lazy"
+                    srcset="https://3og1cv1uvq3u3skase2jhb69-wpengine.netdna-ssl.com/wp-content/uploads/2018/04/crest.png 160w, https://3og1cv1uvq3u3skase2jhb69-wpengine.netdna-ssl.com/wp-content/uploads/2018/04/crest-150x150.png 150w"
+                    sizes="(max-width: 160px) 100vw, 160px" /></a> </div>
+            </div>
+            <div class="col-sm-10">
+              <h1 class="site-title">
+                <a href="https://controller.phila.gov/" title="Office of the Controller" rel="home">
+                  Office of the Controller </a>
+              </h1>
+
+              <h2 class="site-description">
+                Rebecca Rhynhart, City Controller </h2>
+            </div><!-- .col -->
+          </div><!-- .row -->
+        </div>
+        <ul id="menu-main-nav" class="navbar-nav">
+          <li id="menu-item-40"
+            class="menu-item menu-item-type-custom menu-item-object-custom menu-item-has-children menu-item-40 nav-item dropdown">
+            <a href="#" class="nav-link dropdown-toggle" data-toggle="dropdown"><span
+                class="menu-link-text">About</span></a>
+            <ul class="dropdown-menu">
+              <li id="menu-item-1299"
+                class="menu-item menu-item-type-post_type menu-item-object-page menu-item-1299 nav-item"><a
+                  href="https://controller.phila.gov/about/role-of-the-city-controller/" class="dropdown-item"><span
+                    class="menu-link-text">Role &#038; Function</span></a></li>
+              <li id="menu-item-23"
+                class="menu-item menu-item-type-post_type menu-item-object-page menu-item-23 nav-item"><a
+                  href="https://controller.phila.gov/about/divisions/" class="dropdown-item"><span
+                    class="menu-link-text">Divisions</span></a></li>
+              <li id="menu-item-24"
+                class="menu-item menu-item-type-post_type menu-item-object-page menu-item-24 nav-item"><a
+                  href="https://controller.phila.gov/about/about-rebecca-rhynhart/" class="dropdown-item"><span
+                    class="menu-link-text">Rebecca Rhynhart</span></a></li>
+              <li id="menu-item-25"
+                class="menu-item menu-item-type-post_type menu-item-object-page menu-item-25 nav-item"><a
+                  href="https://controller.phila.gov/about/staff/" class="dropdown-item"><span
+                    class="menu-link-text">Staff</span></a></li>
+              <li id="menu-item-1315"
+                class="menu-item menu-item-type-post_type menu-item-object-page menu-item-1315 nav-item"><a
+                  href="https://controller.phila.gov/about/contact-us/" class="dropdown-item"><span
+                    class="menu-link-text">Contact Us</span></a></li>
+              <li id="menu-item-2766"
+                class="menu-item menu-item-type-post_type menu-item-object-page menu-item-2766 nav-item"><a
+                  href="https://controller.phila.gov/about/employee-rights/" class="dropdown-item"><span
+                    class="menu-link-text">Employee Rights</span></a></li>
+              <li id="menu-item-114"
+                class="menu-item menu-item-type-post_type menu-item-object-page menu-item-114 nav-item"><a
+                  href="https://controller.phila.gov/about/language-access-plan/" class="dropdown-item"><span
+                    class="menu-link-text">Language Access Plan</span></a></li>
+            </ul>
+          <li id="menu-item-21" class="menu-item menu-item-type-post_type menu-item-object-page menu-item-21 nav-item">
+            <a href="https://controller.phila.gov/audits/" class="nav-link"><span class="menu-link-text">Audits and
+                Investigations</span></a>
+          <li id="menu-item-558"
+            class="menu-item menu-item-type-post_type menu-item-object-page menu-item-558 nav-item"><a
+              href="https://controller.phila.gov/fraud-reporting/" class="nav-link"><span class="menu-link-text">Fraud
+                Reporting</span></a>
+          <li id="menu-item-22"
+            class="menu-item menu-item-type-post_type menu-item-object-page menu-item-has-children menu-item-22 nav-item dropdown">
+            <a href="https://controller.phila.gov/policy-analysis/" class="nav-link dropdown-toggle"
+              data-toggle="dropdown"><span class="menu-link-text">Policy Analysis</span></a>
+            <ul class="dropdown-menu">
+              <li id="menu-item-1312"
+                class="menu-item menu-item-type-post_type menu-item-object-page menu-item-1312 nav-item"><a
+                  href="https://controller.phila.gov/policy-analysis/reports/" class="dropdown-item"><span
+                    class="menu-link-text">Reports</span></a></li>
+              <li id="menu-item-20"
+                class="menu-item menu-item-type-post_type menu-item-object-page menu-item-20 nav-item"><a
+                  href="https://controller.phila.gov/policy-analysis/request-data/" class="dropdown-item"><span
+                    class="menu-link-text">Suggest a Data Release</span></a></li>
+            </ul>
+          <li id="menu-item-1307"
+            class="menu-item menu-item-type-post_type menu-item-object-page menu-item-has-children menu-item-1307 nav-item dropdown">
+            <a href="https://controller.phila.gov/media/" class="nav-link dropdown-toggle" data-toggle="dropdown"><span
+                class="menu-link-text">Media</span></a>
+            <ul class="dropdown-menu">
+              <li id="menu-item-86"
+                class="menu-item menu-item-type-post_type menu-item-object-page menu-item-86 nav-item"><a
+                  href="https://controller.phila.gov/media/request-the-controller/" class="dropdown-item"><span
+                    class="menu-link-text">Request the Controller</span></a></li>
+              <li id="menu-item-2443"
+                class="menu-item menu-item-type-taxonomy menu-item-object-category menu-item-2443 nav-item"><a
+                  href="https://controller.phila.gov/category/press-releases/" class="dropdown-item"><span
+                    class="menu-link-text">Press Releases</span></a></li>
+              <li id="menu-item-2448"
+                class="menu-item menu-item-type-taxonomy menu-item-object-category menu-item-2448 nav-item"><a
+                  href="https://controller.phila.gov/category/quick-guides/" class="dropdown-item"><span
+                    class="menu-link-text">Quick Guides</span></a></li>
+            </ul>
+        </ul>
+      </div>
+    </nav><!-- #site-navigation -->
+
+    <div class="site-subheader"></div>
+  </header><!-- #masthead -->
+
+  <div id="main" class="site-main" role="main">
+
+    <div class="jumbotron jumbotron-fluid subpage-jumbotron">
+      <div class="container">
+        <header class="entry-header">
+          <div class="row">
+            <div class="col-sm-9">
+              <h1 class="entry-title">
+                Gun Violence Dashboard </h1>
+              <hr />
+            </div>
+            <div class="col-sm-3">
+              <a href="" class="btn btn-primary btn-block btn-block">
+                <i class="fas fa-download"></i> Download Full Report
+              </a>
+            </div>
+          </div>
+          <div class="row">
+            <div class="col">
+              <div class="audit-meta">
+                <div class="audit-date">
+                  XXX XX, 2020 </div>
+                <div class="audit-taxonomies">
+                  <span class="audit-terms audit-categories">
+                    <i class="fas fa-folder"></i>
+                    Interactive </span>
+                  <span class="audit-terms audit-categories">
+                    <i class="fas fa-user"></i>
+                    Rebecca Rhynhart </span>
+                  <span class="audit-terms audit-tags">
+                    <!-- <i class="fas fa-tags"></i>
+                    <span class="badge badge-light">Budget</span>
+                    <span class="badge badge-light">FY21</span> -->
+                  </span>
+                </div>
+              </div><!-- .audit-meta -->
+            </div>
+          </div>
+        </header><!-- .entry-header -->
+      </div>
+    </div>
+    <div class="container">
+      <div class="row">
+        <div class="col-sm-12">
+          <div id="primary" class="content-area">
+            <div id="content" class="site-content clearfix" role="main">
+              <div class="audit-content clearfix">
+              </div><!-- .audit-content -->
+
+              <div class="back-link">
+                <a href="https://controller.phila.gov/policy-analysis/reports/">
+                  <i class="fas fa-arrow-square-left"></i>
+                </a>
+                Back to
+                <a href="https://controller.phila.gov/policy-analysis/reports/">All Reports</a>
+              </div>
+            </div><!-- #content -->
+          </div><!-- #primary -->
+        </div><!-- .col-sm-12 -->
+      </div><!-- .row -->
+    </div><!-- .container -->
+
+
+  </div><!-- #main -->
+
+
+  <div class="scroll-top-wrapper ">
+    <span class="scroll-top-inner"><i class="fa fa-2x fa-arrow-circle-up scroll-icon"></i></span>
+  </div>
+
+  <footer id="colophon" class="site-footer" role="contentinfo">
+    <div class="footer-top">
+      <div class="container">
+        <div class="row footer-widgets">
+          <div class="col-sm-4 footer-col first">
+            <aside id="text-2" class="widget widget_text">
+              <h2 class="widget-title">Contact Information</h2>
+              <div class="textwidget">
+                <p>1230 Municipal Services Building<br />
+                  1401 John F. Kennedy Boulevard<br />
+                  Philadelphia, PA 19102-1679</p>
+                <p><i class="fas fa-phone fa-fw"></i> (215) 686-6680<br />
+                  <i class="fas fa-fax fa-fw"></i> (215) 686-3832<br />
+                  <i class="fas fa-envelope fa-fw"></i> <a href="mailto:controller@phila.gov">controller@phila.gov</a>
+                </p>
+              </div>
+            </aside>
+          </div>
+
+          <div class="col-sm-4 footer-col">
+            <aside id="nav_menu-3" class="widget widget_nav_menu">
+              <h2 class="widget-title">Quick Links</h2>
+              <div class="menu-quick-links-menu-container">
+                <ul id="menu-quick-links-menu" class="menu">
+                  <li id="menu-item-36" class="menu-item menu-item-type-post_type menu-item-object-page menu-item-36"><a
+                      href="https://controller.phila.gov/audits/">Audits and Investigations</a></li>
+                  <li id="menu-item-37" class="menu-item menu-item-type-post_type menu-item-object-page menu-item-37"><a
+                      href="https://controller.phila.gov/policy-analysis/">Policy Analysis</a></li>
+                  <li id="menu-item-38"
+                    class="menu-item menu-item-type-post_type menu-item-object-page current_page_parent menu-item-38"><a
+                      href="https://controller.phila.gov/media/press-releases/">Press Releases</a></li>
+                  <li id="menu-item-2033"
+                    class="menu-item menu-item-type-custom menu-item-object-custom menu-item-2033"><a
+                      href="https://www.facebook.com/PhilaController">Facebook</a></li>
+                  <li id="menu-item-2034"
+                    class="menu-item menu-item-type-custom menu-item-object-custom menu-item-2034"><a
+                      href="https://twitter.com/PhilaController">Twitter</a></li>
+                </ul>
+              </div>
+            </aside>
+          </div>
+
+          <div class="col-sm-4 footer-col">
+            <aside id="yikes_easy_mc_widget-2" class="widget widget_yikes_easy_mc_widget">
+              <h2 class="widget-title">Newsletter Signup</h2>
+              <section id="yikes-mailchimp-container-1" class="yikes-mailchimp-container yikes-mailchimp-container-1 ">
+                <form id="newsletter-signup-1" class="yikes-easy-mc-form yikes-easy-mc-form-1  " method="POST"
+                  data-attr-form-id="1">
+
+                  <label for="yikes-easy-mc-form-1-FNAME" class="FNAME-label ">
+
+                    <!-- dictate label visibility -->
+
+                    <!-- Description Above -->
+
+                    <input id="yikes-easy-mc-form-1-FNAME" name="FNAME" placeholder="First Name"
+                      class="yikes-easy-mc-text field-no-label" type="text" value="">
+
+                    <!-- Description Below -->
+
+                  </label>
+                  <label for="yikes-easy-mc-form-1-LNAME" class="LNAME-label ">
+
+                    <!-- dictate label visibility -->
+
+                    <!-- Description Above -->
+
+                    <input id="yikes-easy-mc-form-1-LNAME" name="LNAME" placeholder="Last Name"
+                      class="yikes-easy-mc-text field-no-label" type="text" value="">
+
+                    <!-- Description Below -->
+
+                  </label>
+                  <label for="yikes-easy-mc-form-1-EMAIL" class="EMAIL-label yikes-mailchimp-field-required ">
+
+                    <!-- dictate label visibility -->
+
+                    <!-- Description Above -->
+
+                    <input id="yikes-easy-mc-form-1-EMAIL" name="EMAIL" placeholder="Email Address"
+                      class="yikes-easy-mc-email field-no-label" required="required" type="email" value="">
+
+                    <!-- Description Below -->
+
+                  </label>
+
+                  <!-- Honeypot Trap -->
+                  <input type="hidden" name="yikes-mailchimp-honeypot" id="yikes-mailchimp-honeypot-1" value="">
+
+                  <!-- List ID -->
+                  <input type="hidden" name="yikes-mailchimp-associated-list-id"
+                    id="yikes-mailchimp-associated-list-id-1" value="8ed8b47516">
+
+                  <!-- The form that is being submitted! Used to display error/success messages above the correct form -->
+                  <input type="hidden" name="yikes-mailchimp-submitted-form" id="yikes-mailchimp-submitted-form-1"
+                    value="1">
+
+                  <!-- Submit Button -->
+                  <button type="submit"
+                    class="yikes-easy-mc-submit-button yikes-easy-mc-submit-button-1 btn btn-primary "> <span
+                      class="yikes-mailchimp-submit-button-span-text">Sign Up</span></button>
+                  <!-- Nonce Security Check -->
+                  <input type="hidden" id="yikes_easy_mc_new_subscriber_1" name="yikes_easy_mc_new_subscriber"
+                    value="56106800e2">
+                  <input type="hidden" name="_wp_http_referer" value="/philadelphia-audits/interactive-fy21-budget/" />
+                </form>
+                <!-- Mailchimp Form generated by Easy Forms for Mailchimp v6.7.0 (https://wordpress.org/plugins/yikes-inc-easy-mailchimp-extender/) -->
+
+              </section>
+            </aside>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="footer-bottom">
+      <div class="container">
+        <div class="row">
+          <div class="col-sm-6">
+            Copyright &#169;
+            <a href="https://controller.phila.gov/" title="Office of the Controller" rel="home">Office of the
+              Controller</a> - City of Philadelphia
+          </div>
+          <div class="col-sm-6">
+            <aside id="nav_menu-2" class="widget widget_nav_menu">
+              <div class="menu-footer-menu-container">
+                <ul id="menu-footer-menu" class="menu">
+                  <li id="menu-item-33" class="menu-item menu-item-type-post_type menu-item-object-page menu-item-33"><a
+                      href="https://controller.phila.gov/terms-and-conditions/">Terms and Conditions</a></li>
+                  <li id="menu-item-32"
+                    class="menu-item menu-item-type-post_type menu-item-object-page menu-item-privacy-policy menu-item-32">
+                    <a href="https://controller.phila.gov/privacy-policy/">Privacy Policy</a></li>
+                  <li id="menu-item-2473"
+                    class="menu-item menu-item-type-custom menu-item-object-custom menu-item-2473"><a target="_blank"
+                      rel="noopener noreferrer" href="https://www.phila.gov/privacy/pdfs/FinalCityOpenRecords.pdf">Right
+                      to Know (pdf)</a></li>
+                </ul>
+              </div>
+            </aside>
+          </div>
+        </div><!-- .row -->
+      </div><!-- .container -->
+    </div>
+  </footer><!-- #colophon -->
+
+  <script type='text/javascript'
+    src='https://3og1cv1uvq3u3skase2jhb69-wpengine.netdna-ssl.com/wp-content/themes/philacontroller/inc/js/yikes-theme-scripts.min.js?ver=20120206'
+    id='yikes-starter-navigation-js'></script>
+  <script type='text/javascript' src='//cdnjs.cloudflare.com/ajax/libs/popper.js/1.11.0/umd/popper.min.js?ver=all'
+    id='yikes-popper-script-js'></script>
+  <script type='text/javascript'
+    src='https://3og1cv1uvq3u3skase2jhb69-wpengine.netdna-ssl.com/wp-content/themes/philacontroller/inc/bootstrap/js/bootstrap.min.js?ver=all'
+    id='yikes-bootstrap-script-js'></script>
+  <script type='text/javascript'
+    src='https://3og1cv1uvq3u3skase2jhb69-wpengine.netdna-ssl.com/wp-content/themes/philacontroller/inc/js/wow.min.js?ver=all'
+    id='wow-js'></script>
+  <script type='text/javascript'
+    src='https://3og1cv1uvq3u3skase2jhb69-wpengine.netdna-ssl.com/wp-content/themes/philacontroller/inc/js/wow-init.js'
+    id='init-wow-js'></script>
+  <script type='text/javascript'
+    src='https://3og1cv1uvq3u3skase2jhb69-wpengine.netdna-ssl.com/wp-includes/js/wp-embed.min.js?ver=5.5'
+    id='wp-embed-js'></script>
+  <script type='text/javascript' id='yikes-easy-mc-ajax-js-extra'>
+    /* <![CDATA[ */
+    var yikes_mailchimp_ajax = { "ajax_url": "https:\/\/controller.phila.gov\/wp-admin\/admin-ajax.php", "page_data": "2871", "interest_group_checkbox_error": "This field is required.", "preloader_url": "https:\/\/controller.phila.gov\/wp-content\/plugins\/yikes-inc-easy-mailchimp-extender\/includes\/images\/ripple.svg", "loading_dots": "https:\/\/controller.phila.gov\/wp-content\/plugins\/yikes-inc-easy-mailchimp-extender\/includes\/images\/bars.svg", "ajax_security_nonce": "fba0efb5fc", "feedback_message_placement": "before" };
+/* ]]> */
+  </script>
+  <script type='text/javascript'
+    src='https://3og1cv1uvq3u3skase2jhb69-wpengine.netdna-ssl.com/wp-content/plugins/yikes-inc-easy-mailchimp-extender/public/js/yikes-mc-ajax-forms.min.js?ver=6.7.0'
+    id='yikes-easy-mc-ajax-js'></script>
+  <script type='text/javascript' id='form-submission-helpers-js-extra'>
+    /* <![CDATA[ */
+    var form_submission_helpers = { "ajax_url": "https:\/\/controller.phila.gov\/wp-admin\/admin-ajax.php", "preloader_url": "https:\/\/controller.phila.gov\/wp-admin\/images\/wpspin_light.gif", "countries_with_zip": { "US": "US", "GB": "GB", "CA": "CA", "IE": "IE", "CN": "CN", "IN": "IN", "AU": "AU", "BR": "BR", "MX": "MX", "IT": "IT", "NZ": "NZ", "JP": "JP", "FR": "FR", "GR": "GR", "DE": "DE", "NL": "NL", "PT": "PT", "ES": "ES" }, "page_data": "2871" };
+/* ]]> */
+  </script>
+  <script type='text/javascript'
+    src='https://3og1cv1uvq3u3skase2jhb69-wpengine.netdna-ssl.com/wp-content/plugins/yikes-inc-easy-mailchimp-extender/public/js/form-submission-helpers.min.js?ver=6.7.0'
+    id='form-submission-helpers-js'></script>
+
+</body>
+
 </html>
