@@ -176,7 +176,7 @@ export default {
 }
 
 #app {
-  padding-top: 100px;
+  padding-top: 5px;
   padding-bottom: 100px;
 }
 </style>
