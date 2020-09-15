@@ -28,25 +28,20 @@ The application is built using a combination of open-source using tools, includi
 - [vue-apexcharts](https://github.com/apexcharts/vue-apexcharts), and;
 - [crossfilter](https://github.com/crossfilter/crossfilter).
 
-## Project setup
+### Development
+
+#### Project setup
 ```
 npm install
 ```
 
-### Compiles and hot-reloads for development
+#### Compiles and hot-reloads for development
 ```
 npm run serve
 ```
 
-### Compiles and minifies for production
+#### Compiles and minifies for production
 ```
 npm run build
 ```
 
-### Lints and fixes files
-```
-npm run lint
-```
-
-### Customize configuration
-See [Configuration Reference](https://cli.vuejs.org/config/).
