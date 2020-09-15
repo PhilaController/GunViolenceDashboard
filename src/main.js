@@ -1,13 +1,16 @@
 import Vue from 'vue'
-import App from './App.vue'
-import store from './store'
+import App from '@/App'
+import store from '@/store'
+import router from "@/router";
+import vuetify from '@/plugins/vuetify' // path to vuetify export
 import { Icon } from "leaflet";
 import "leaflet/dist/leaflet.css";
-import Vuelidate from 'vuelidate'
-Vue.use(Vuelidate)
+
 
 // make FA does not watch SVG elements
-if (window.FontAwesome) window.FontAwesome.config.observeMutations = false;
+if (window.FontAwesome) {
+  window.FontAwesome.config.observeMutations = false;
+}
 Vue.config.productionTip = false;
 
 // Fix leaflet icons
@@ -37,5 +40,7 @@ $(".back-link").after(helpMessage);
 
 new Vue({
   store,
+  router,
+  vuetify,
   render: h => h(App)
 }).$mount('#app')

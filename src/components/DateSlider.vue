@@ -2,8 +2,8 @@
   <div class="date-slider-wrapper">
     <vue-slider
       class="date-slider"
+      :width="300"
       v-model="value"
-      :width="width"
       :min="1"
       :max="366"
       :lazy="false"
@@ -24,7 +24,7 @@ import VueSlider from "vue-slider-component";
 import "vue-slider-component/theme/default.css";
 
 export default {
-  props: ["width", "selectedYear", "maxAllowedValue"],
+  props: ["selectedYear", "maxAllowedValue"],
   components: { VueSlider },
   data() {
     return {

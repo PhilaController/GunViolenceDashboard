@@ -1,12 +1,12 @@
 <template>
   <div class="cumulative-shootings-chart-wrapper">
-    <div class="section-header">Daily Shooting Totals Since 2015</div>
     <apexchart
       height="600"
       type="line"
       :series="series"
       :options="chartOptions"
       id="cumulativeChart"
+      v-if="data.length"
     ></apexchart>
   </div>
 </template>
@@ -20,6 +20,7 @@ function formatNumber(d) {
 
 export default {
   components: { apexchart: VueApexCharts },
+  props: ["selectedYear"],
   data() {
     return {
       data: null,
@@ -38,8 +39,9 @@ export default {
   computed: {
     colors() {
       let out = [];
-      for (let year = this.maxYear; year >= this.minYear; year--) {
-        out.push(this.colorPalette[year]);
+      for (let year = this.minYear; year <= this.maxYear; year++) {
+        if (year == this.selectedYear) out.push("#ee266d");
+        else out.push("#ffffff91");
       }
       return out;
     },
@@ -68,7 +70,7 @@ export default {
           },
         },
         tooltip: {
-          shared: true,
+          shared: false,
           theme: "dark",
           style: { fontSize: "1.0rem" },
           y: {
@@ -121,7 +123,7 @@ export default {
       let out = [];
       if (!this.data) return out;
 
-      for (let year = this.maxYear; year >= this.minYear; year--) {
+      for (let year = this.minYear; year <= this.maxYear; year++) {
         out.push({ name: year, data: this.data[`${year}`] });
       }
       return out;
@@ -147,15 +149,12 @@ export default {
 </script>
 
 <style>
-#cumulativeChart {
-  max-width: 1000px;
-  margin-top: 30px;
-  margin: auto;
-}
 #cumulativeChart text {
   fill: #fff;
 }
 .cumulative-shootings-chart-wrapper {
-  margin-top: 100px;
+  flex-grow: 1;
+  margin-left: 5rem;
+  margin-top: 50px;
 }
 </style>

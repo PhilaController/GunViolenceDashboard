@@ -18,3 +18,7 @@ export function getDayOfYear(dt) {
     return Math.floor(diff / oneDay);
 }
 
+
+export function formatNumber(d) {
+    return d.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+}

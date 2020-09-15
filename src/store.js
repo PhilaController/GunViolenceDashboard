@@ -10,8 +10,7 @@ const parseTime = timeParse("%Y/%m/%d %H:%M:%S");
 export default new Vuex.Store({
   state: {
     data: null,
-    minFormattedDate: null,
-    maxFormattedDate: null,
+    selectedYear: 2020
   },
   mutations: {
     setValue(state, payload) {
@@ -19,23 +18,10 @@ export default new Vuex.Store({
     }
   },
   actions: {
-    fetchDailyData(store) {
-
-      // Pull from Github
-      let url = `https://raw.githubusercontent.com/PhiladelphiaController/gun-violence-dashboard-data/master/gun_violence_dashboard_data/data/shootings_cumulative_daily.json`
-
-      return json(url).then(function (data) {
-
-        // Save data 
-        store.commit("setValue", { value: data, key: "daily" });
-        return data;
-      });
-
-    },
     fetchData(store, { year }) {
 
       // Pull from Github
-      let url = `https://raw.githubusercontent.com/PhiladelphiaController/gun-violence-dashboard-data/master/gun_violence_dashboard_data/data/shootings_${year}.json`
+      let url = `https://raw.githubusercontent.com/PhiladelphiaController/gun-violence-dashboard-data/master/gun_violence_dashboard_data/data/processed/shootings_${year}.json`
 
       return json(url).then(function (data) {
 
@@ -53,6 +39,17 @@ export default new Vuex.Store({
         store.commit("setValue", { value: features, key: year });
 
         return features;
+      });
+
+    },
+    fetchHomicideData(store) {
+
+      // Pull from Github
+      let url = `https://raw.githubusercontent.com/PhiladelphiaController/gun-violence-dashboard-data/master/gun_violence_dashboard_data/data/processed/homicide_totals.json`
+
+      return json(url).then(function (data) {
+        store.commit("setValue", { value: data, key: 'homicides' });
+        return data;
       });
 
     },

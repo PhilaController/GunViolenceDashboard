@@ -1,0 +1,312 @@
+<template>
+  <v-app id="inspire">
+    <div class="dark-app-theme" style="position: relative">
+      <Loader v-if="isLoading" />
+
+      <!-- Header message -->
+      <HeaderMessage
+        ref="headerMessage"
+        class="header-message"
+        :fatal="fatalCount"
+        :nonfatal="nonfatalCount"
+        :selectedYear="selectedYear"
+        :currentYear="currentYear"
+        :maxDate="maxDate"
+        :homicideData="homicideData"
+      />
+
+      <!-- Shootings map & Sidebar-->
+      <div class="shootings-map-wrapper">
+        <ShootingsMap
+          ref="shootingsMap"
+          class="shootings-map"
+          :geojson="pointsGeoJSON"
+        />
+        <ShootingsMapSidebar
+          ref="mapSidebar"
+          @update-layer="updateLayer"
+          @update-date="updateDateFilter"
+          @update-fatal="updateFatalFilter"
+          @update-arrests="updateArrestsFilter"
+          @update-race="updateRaceFilter"
+          @update-gender="updateGenderFilter"
+          @update-age="updateAgeFilter"
+          @reset="handleReset"
+          :pointsOnMap="pointsOnMap"
+          :filteredSize="filteredSize"
+          :selectedYear="selectedYear"
+          :allowedAgeRange="allowedAgeRange"
+          :allowedDateRange="allowedDateRange"
+          :currentFilters="currentFilters"
+        />
+      </div>
+
+      <!-- Charts -->
+      <ChartDashboard :filteredData="filteredData" />
+    </div>
+  </v-app>
+</template>
+
+<script>
+import { getDayOfYear, dateFromDay } from "@/tools.js";
+import ShootingsMap from "./ShootingsMap/Map";
+import ShootingsMapSidebar from "./ShootingsMap/Sidebar";
+import HeaderMessage from "./HeaderMessage";
+import Loader from "./Loader";
+import ChartDashboard from "./ChartDashboard";
+import crossfilter from "crossfilter2";
+import { min, max } from "d3-array";
+
+export default {
+  name: "HomePage",
+  components: {
+    ShootingsMap,
+    ShootingsMapSidebar,
+    HeaderMessage,
+    ChartDashboard,
+    Loader,
+  },
+  data() {
+    return {
+      filteredData: null,
+      homicideData: null,
+      crossfilters: {},
+      dimensions: {
+        date: {},
+        fatal: {},
+        race: {},
+        age: {},
+        sex: {},
+        has_court_case: {},
+      },
+      currentYear: new Date().getFullYear(),
+      currentFilters: {
+        date: null,
+        fatal: null,
+        race: null,
+        age: null,
+        sex: null,
+        has_court_case: null,
+      },
+      allowedAgeRange: [0, 100],
+      allowedDateRange: [1, 366],
+      fatalCount: 0,
+      nonfatalCount: 0,
+      maxDate: null,
+    };
+  },
+  created() {
+    this.fetchHomicideData();
+    this.fetchData(this.selectedYear);
+  },
+  watch: {
+    selectedYear(nextValue, prevValue) {
+      if (nextValue !== prevValue) this.handleYearSelection(nextValue);
+    },
+  },
+  computed: {
+    isLoading() {
+      return this.filteredData == null;
+    },
+    selectedYear() {
+      return this.$store.state.selectedYear;
+    },
+    pointsGeoJSON() {
+      if (this.filteredData)
+        return this.filteredData.filter((d) => d.geometry != null);
+      else return [];
+    },
+    pointsOnMap() {
+      if (this.filteredData)
+        return this.filteredData.filter((d) => d.geometry != null).length;
+      else return 0;
+    },
+    filteredSize() {
+      if (this.filteredData) return this.filteredData.length;
+      else return 0;
+    },
+  },
+  methods: {
+    updateLayer(layers) {
+      this.$refs.shootingsMap.setActiveLayers(layers);
+    },
+    handleReset(filterName) {
+      if ((filterName == "date") | (filterName == "age")) {
+        this.currentFilters[filterName] = null;
+        this.applyFilter(filterName);
+      }
+    },
+    setShootingCounts() {
+      this.fatalCount = this.filteredData.filter(
+        (el) => el.properties["fatal"] == 1
+      ).length;
+      this.nonfatalCount = this.filteredData.length - this.fatalCount;
+    },
+    getAllowedAges() {
+      return [
+        min(this.filteredData.map((el) => +el.properties["age"])),
+        max(this.filteredData.map((el) => +el.properties["age"])),
+      ];
+    },
+    getAllowedDates() {
+      this.maxDate = this.dimensions.date[this.selectedYear].top(
+        1
+      )[0].properties.date;
+      return [
+        getDayOfYear(
+          this.dimensions.date[this.selectedYear].bottom(1)[0].properties.date
+        ),
+        getDayOfYear(this.maxDate),
+      ];
+    },
+    updateAgeFilter(value) {
+      // Increase max by one due to crossfilter top point being exclusive
+      this.currentFilters.age = [value[0], value[1] + 1];
+      this.applyFilter("age");
+    },
+    updateGenderFilter(value) {
+      this.currentFilters.sex = (d) => value.indexOf(d) !== -1;
+      this.applyFilter("sex");
+    },
+    updateRaceFilter(value) {
+      this.currentFilters.race = (d) => value.indexOf(d) !== -1;
+      this.applyFilter("race");
+    },
+    updateFatalFilter(value) {
+      if (value) {
+        this.currentFilters.fatal = 1;
+      } else this.currentFilters.fatal = null;
+      this.applyFilter("fatal");
+    },
+    updateArrestsFilter(value) {
+      if (value) {
+        this.currentFilters.has_court_case = true;
+      } else this.currentFilters.has_court_case = null;
+      this.applyFilter("has_court_case");
+    },
+    updateDateFilter(value) {
+      // Increase max by one due to crossfilter top point being exclusive
+      this.currentFilters.date = [
+        dateFromDay(this.selectedYear, value[0]),
+        dateFromDay(this.selectedYear, value[1] + 1),
+      ];
+      this.applyFilter("date");
+    },
+    applyFilter(filterName) {
+      // Filter by the date
+      this.dimensions[filterName][this.selectedYear].filter(
+        this.currentFilters[filterName]
+      );
+
+      // Set filtered data
+      this.filteredData = this.crossfilters[this.selectedYear].allFiltered();
+    },
+    setDateSliderValue() {
+      this.$refs.mapSidebar.setDateSlider(this.getAllowedDates());
+    },
+    handleYearSelection(year) {
+      // Fetch data
+      if (!this.crossfilters[year]) {
+        this.fetchData(year, this.setDateSliderValue);
+      } else {
+        // Change full year data
+        this.filteredData = this.$store.state[year];
+
+        // Clear filters
+        for (let filterName in this.currentFilters) {
+          this.$refs.mapSidebar.resetFilter(filterName);
+          this.currentFilters[filterName] = null;
+          this.applyFilter(filterName);
+        }
+
+        // Get fatal counts
+        this.setShootingCounts();
+
+        this.allowedAgeRange = this.getAllowedAges();
+        this.allowedDateRange = this.getAllowedDates();
+
+        // call callback
+        this.setDateSliderValue();
+      }
+    },
+    createCrossfilter(data, year) {
+      // Create and save crossfilter
+      this.crossfilters[year] = crossfilter(data);
+
+      // Create dimensions
+      for (let dim in this.dimensions) {
+        this.dimensions[dim][year] = this.crossfilters[year].dimension(
+          (d) => d.properties[dim]
+        );
+      }
+
+      return this.crossfilters[year];
+    },
+    fetchHomicideData() {
+      this.homicideData = this.$store.state.homicides;
+
+      if (!this.homicideData) {
+        this.$store.dispatch("fetchHomicideData").then((data) => {
+          this.homicideData = data;
+        });
+      }
+    },
+    fetchData(year, callback) {
+      // Get the data for the full year from the data store
+      this.filteredData = this.$store.state[year];
+
+      // Fetch it if we need to
+      if (!this.filteredData) {
+        // Download
+        this.$store
+          .dispatch("fetchData", {
+            year: this.selectedYear,
+          })
+          .then((data) => {
+            // Save
+            this.filteredData = data;
+            this.createCrossfilter(data, year);
+
+            // Clear filters
+            for (let filterName in this.currentFilters) {
+              this.$refs.mapSidebar.resetFilter(filterName);
+              this.currentFilters[filterName] = null;
+              this.applyFilter(filterName);
+            }
+
+            // Get fatal counts
+            this.setShootingCounts();
+
+            // Set the allowed slider ranges
+            this.allowedAgeRange = this.getAllowedAges();
+            this.allowedDateRange = this.getAllowedDates();
+
+            // Call callback
+            if (callback) callback();
+          });
+      }
+    },
+  },
+};
+</script>
+
+<style>
+.full-page-loader.vld-overlay {
+  align-items: flex-start !important;
+}
+.full-page-loader .vld-icon {
+  margin-top: 50px !important;
+}
+.shootings-map-wrapper {
+  display: flex;
+  margin-top: 100px;
+  margin-bottom: 20px;
+  border: 5px solid #868b8e;
+}
+
+@media only screen and (max-width: 767px) {
+  .shootings-map-wrapper {
+    flex-direction: column;
+  }
+}
+</style>
