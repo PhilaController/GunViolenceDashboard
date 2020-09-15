@@ -20,7 +20,12 @@
         <v-expansion-panel class="dark-theme">
           <v-expansion-panel-header
             hide-actions
-            style="display: flex; flex-wrap: wrap"
+            style="
+              display: flex;
+              flex-direction: column;
+              justify-content: center;
+              align-items: flex-start;
+            "
           >
             <v-switch
               v-model="fatalOnly"
@@ -330,10 +335,11 @@ export default {
 
   methods: {
     resetAllFilters(filterName) {
-      let filters = ["race", "age", "date", "sex"];
-      for (let i = 0; i < filters.length; i++) this.resetFilter(filters[i]);
-      this.fatalOnly = false;
-      this.arrestsOnly = false;
+      let filters = ["race", "age", "date", "sex", "fatal", "has_court_case"];
+      for (let i = 0; i < filters.length; i++) {
+        this.$emit("reset", filters[i]);
+        this.resetFilter(filters[i]);
+      }
     },
     showReset(filterName) {
       if (filterName == "race") {

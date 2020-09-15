@@ -213,11 +213,7 @@ export default {
         this.filteredData = this.$store.state[year];
 
         // Clear filters
-        for (let filterName in this.currentFilters) {
-          this.$refs.mapSidebar.resetFilter(filterName);
-          this.currentFilters[filterName] = null;
-          this.applyFilter(filterName);
-        }
+        this.$refs.mapSidebar.resetAllFilters();
 
         // Get fatal counts
         this.setShootingCounts();
@@ -268,11 +264,7 @@ export default {
             this.createCrossfilter(data, year);
 
             // Clear filters
-            for (let filterName in this.currentFilters) {
-              this.$refs.mapSidebar.resetFilter(filterName);
-              this.currentFilters[filterName] = null;
-              this.applyFilter(filterName);
-            }
+            this.$refs.mapSidebar.resetAllFilters();
 
             // Get fatal counts
             this.setShootingCounts();
