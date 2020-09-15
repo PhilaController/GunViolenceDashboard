@@ -1,4 +1,4 @@
-# gun-violence-dashboard
+# Mapping Philadelphia's Gun Violence Crisis
 
 The code behind the interactive map of Philadelphia's gun violence crisis. 
 
