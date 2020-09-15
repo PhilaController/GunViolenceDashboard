@@ -21,7 +21,7 @@ For the software and data behind the analysis for this dashboard, see the compan
 
 ## Tools
 
-The application is built using a combination of open-source using tools, including:
+The application is built using a combination of open-source tools, including:
 
 - [vue](https://github.com/vuejs/vue);
 - [leaflet](https://github.com/Leaflet/Leaflet) and [esri-leaflet](https://github.com/Esri/esri-leaflet);
