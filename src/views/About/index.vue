@@ -136,11 +136,11 @@
       <ul>
         <li>
           <a
-            href="https://github.com/PhiladelphiaController/gun-violence-dashboard"
+            href="https://github.com/PhiladelphiaController/GunViolenceDashboard"
             target="blank_"
           >
             <i class="fas fa-external-link-alt mr-2"></i>
-            https://github.com/PhiladelphiaController/gun-violence-dashboard</a
+            https://github.com/PhiladelphiaController/GunViolenceDashboard</a
           >
         </li>
         <li>
