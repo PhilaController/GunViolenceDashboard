@@ -21,7 +21,7 @@ import { scaleSequential, scaleLinear } from "d3-scale";
 import { interpolatePlasma } from "d3-scale-chromatic";
 import { select } from "d3-selection";
 export default {
-  props: ["height", "width"],
+  props: ["height", "width", "colorScheme", "range"],
   data() {
     return {
       margin: { right: 0, bottom: 0, left: 0 },
@@ -30,43 +30,59 @@ export default {
   },
   computed: {
     colorScale() {
-      return scaleLinear().domain([0, 1]).range([0.5, 1]);
+      return scaleLinear().domain([0, 1]).range(this.range);
+    },
+  },
+  watch: {
+    colorScheme(nextValue, prevValue) {
+      // Remove existing
+      let svg = select("#hot-spot-canvas");
+      svg.selectAll("linearGradient").remove();
+      svg.selectAll("g").remove();
+
+      // Add colorbar
+      this.addColorBar();
+    },
+  },
+  methods: {
+    addColorBar() {
+      let svg = select("#hot-spot-canvas");
+      const defs = svg.append("defs");
+
+      const linearGradient = defs
+        .append("linearGradient")
+        .attr("id", "linear-gradient");
+
+      linearGradient
+        .selectAll("stop")
+        .data(
+          this.colorScale.ticks().map((t, i, n) => ({
+            offset: `${(100 * i) / n.length}%`,
+            color: this.colorScheme(this.colorScale(t)),
+          }))
+        )
+        .enter()
+        .append("stop")
+        .attr("offset", (d) => d.offset)
+        .attr("stop-color", (d) => d.color);
+
+      svg
+        .append("g")
+        .attr(
+          "transform",
+          `translate(0,${this.height - this.margin.bottom - this.barHeight})`
+        )
+        .append("rect")
+        .attr("transform", `translate(${this.margin.left}, 0)`)
+        .attr("width", this.width - this.margin.right - this.margin.left)
+        .attr("height", this.barHeight)
+        .attr("stroke-width", 3)
+        .attr("stroke", "#666")
+        .style("fill", "url(#linear-gradient)");
     },
   },
   mounted() {
-    let svg = select("#hot-spot-canvas");
-    const defs = svg.append("defs");
-
-    const linearGradient = defs
-      .append("linearGradient")
-      .attr("id", "linear-gradient");
-
-    linearGradient
-      .selectAll("stop")
-      .data(
-        this.colorScale.ticks().map((t, i, n) => ({
-          offset: `${(100 * i) / n.length}%`,
-          color: interpolatePlasma(this.colorScale(t)),
-        }))
-      )
-      .enter()
-      .append("stop")
-      .attr("offset", (d) => d.offset)
-      .attr("stop-color", (d) => d.color);
-
-    svg
-      .append("g")
-      .attr(
-        "transform",
-        `translate(0,${this.height - this.margin.bottom - this.barHeight})`
-      )
-      .append("rect")
-      .attr("transform", `translate(${this.margin.left}, 0)`)
-      .attr("width", this.width - this.margin.right - this.margin.left)
-      .attr("height", this.barHeight)
-      .attr("stroke-width", 3)
-      .attr("stroke", "#666")
-      .style("fill", "url(#linear-gradient)");
+    this.addColorBar();
   },
 };
 </script>
