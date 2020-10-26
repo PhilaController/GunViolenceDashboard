@@ -140,7 +140,7 @@ export default {
 }
 @media only screen and (max-width: 768px) {
   .header-submessage {
-    font-size: 2rem;
+    font-size: 1.8rem;
     margin-top: 50px;
   }
 }
