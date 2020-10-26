@@ -12,7 +12,7 @@ export default {
       dataKey: (d) => d.properties.age_group,
       categories: [
         "Younger than 18",
-        "19 to 30",
+        "18 to 30",
         "31 to 45",
         "Older than 45",
         "Unknown",
