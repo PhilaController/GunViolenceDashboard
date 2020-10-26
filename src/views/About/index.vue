@@ -66,7 +66,7 @@
             </div>
           </li>
 
-          <li>
+          <li class="shooting-victims-download">
             <span class="mr-3"
               >Court Cases Associated with Shooting Incidents:</span
             >
@@ -75,7 +75,7 @@
               @click.prevent="
                 downloadItem({
                   url: courtsDataUrl,
-                  label: `pa_ujd_courts_data_by_incident.json`,
+                  label: `pa_ujs_data_by_incident.json`,
                 })
               "
               ><i class="fas fa-download mr-2"></i>All Years</a
@@ -140,7 +140,9 @@
             target="blank_"
           >
             <i class="fas fa-external-link-alt mr-2"></i>
-            https://github.com/PhiladelphiaController/GunViolenceDashboard</a
+            <span class="url-break">
+              https://github.com/PhiladelphiaController/GunViolenceDashboard</span
+            ></a
           >
         </li>
         <li>
@@ -149,7 +151,9 @@
             target="blank_"
           >
             <i class="fas fa-external-link-alt mr-2"></i>
-            https://github.com/PhiladelphiaController/gun-violence-dashboard-data
+            <span class="url-break">
+              https://github.com/PhiladelphiaController/gun-violence-dashboard-data
+            </span>
           </a>
         </li>
       </ul>
@@ -220,6 +224,9 @@ export default {
 </script>
 
 <style>
+.url-break {
+  word-wrap: break-word;
+}
 .shooting-victims-download div:not(:last-child) {
   margin-right: 1.5rem;
 }
@@ -227,6 +234,17 @@ export default {
   display: flex;
   flex-direction: row;
 }
+
+@media only screen and (max-width: 767px) {
+  .shooting-victims-download {
+    display: flex;
+    flex-direction: column;
+  }
+  .shooting-victims-download:nth-child(2) {
+    margin-top: 1rem;
+  }
+}
+
 .about-page {
   text-align: left;
 }
