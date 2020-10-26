@@ -1,8 +1,13 @@
 <template>
   <div id="shootingsMapContainer" style="position: relative">
-    <div class="legend-overlay-bar" v-if="isActive('streets')">
+    <div class="legend-overlay-bar" v-if="showLegend()">
       <div class="legend-flex-wrapper">
-        <Legend :height="20" :width="200" />
+        <Legend
+          :height="20"
+          :width="200"
+          :colorScheme="legendColorScale"
+          :range="legendRange"
+        />
       </div>
     </div>
     <l-map
@@ -36,9 +41,9 @@ import L from "leaflet";
 import * as Vue2Leaflet from "vue2-leaflet";
 import "leaflet.heat";
 
-import { min, max, rollup } from "d3-array";
-import { scaleLog } from "d3-scale";
-import { interpolatePlasma } from "d3-scale-chromatic";
+import { min, max, rollup, extent } from "d3-array";
+import { scaleLog, scaleSequential } from "d3-scale";
+import { interpolatePlasma, interpolateReds } from "d3-scale-chromatic";
 import Loading from "vue-loading-overlay";
 import "vue-loading-overlay/dist/vue-loading.css";
 
@@ -72,14 +77,27 @@ export default {
   data() {
     return {
       isLoading: false,
+      legendColorScale: interpolatePlasma,
+      legendRange: [0.5, 1.0],
       streetsURL:
         "https://services.arcgis.com/fLeGjb7u4uXqeF9q/arcgis/rest/services/Philadelphia_Streets/FeatureServer/0",
       activeLayers: ["points"],
+      aggLayer: null,
       mapOptions: {
         maxZoom: 16,
         minZoom: 11,
         zoomControl: false,
         scrollWheelZoom: false,
+      },
+      aggLayerURLs: {
+        police:
+          "https://services.arcgis.com/fLeGjb7u4uXqeF9q/arcgis/rest/services/Boundaries_District/FeatureServer/0",
+        council:
+          "https://services.arcgis.com/fLeGjb7u4uXqeF9q/arcgis/rest/services/Council_Districts_2016/FeatureServer/0/",
+        zip:
+          "https://services.arcgis.com/fLeGjb7u4uXqeF9q/arcgis/rest/services/Philadelphia_ZCTA_2018/FeatureServer/0",
+        hood:
+          "https://services.arcgis.com/fLeGjb7u4uXqeF9q/arcgis/rest/services/Philly_NTAs/FeatureServer/0",
       },
       zoom: 12,
       center: [39.9854507, -75.15],
@@ -98,6 +116,21 @@ export default {
     };
   },
   computed: {
+    lengthGeojson() {
+      return this.geojson.length;
+    },
+    aggExtent() {
+      if (this.aggCounts) return [0, max(this.aggCounts, (d) => d[1])];
+    },
+    aggCounts() {
+      if (this.geojson !== null) {
+        return rollup(
+          this.geojson,
+          (v) => v.length,
+          (d) => d.properties[this.aggLayer]
+        );
+      }
+    },
     streetCounts() {
       if (this.isActive("streets")) {
         return rollup(
@@ -117,6 +150,9 @@ export default {
       return scaleLog()
         .domain([this.minStreetCount, this.maxStreetCount])
         .range([0.5, 1]);
+    },
+    aggColorScale() {
+      return scaleSequential(interpolateReds).domain(this.aggExtent);
     },
     minStreetCount() {
       if (this.streetCounts) return min(this.streetCounts.values());
@@ -143,13 +179,6 @@ export default {
 
     onEachFeatureFunction() {
       return (feature, layer) => {
-        // // convert the "date_" field to a Javascript Date object
-        // let dt = feature.properties.date;
-
-        // // define the popup content
-        // let content = `<div>Victim's Age: ${feature.properties.age}</div>
-        //     <div>Date: ${dt.toDateString()}</div>`;
-
         let aliases = {
           W: "White (Non-Hispanic)",
           B: "Black (Non-Hispanic)",
@@ -233,6 +262,17 @@ export default {
       button.on("click", this.zoomHome);
       $("#shootingsMapContainer .leaflet-control-zoom").append(button);
 
+      // add data download
+      let button2 = $(`<a class="leaflet-control-zoom-in" id="downloadButton"
+                       title="Download data" role="button" aria-label="Download data" style="display: none;">
+        <i class="fa fa-download" aria-hidden="true"></i>
+        </a>`);
+      button2.on("click", this.getAggLayerGeoJSON);
+      $("#shootingsMapContainer .leaflet-control-zoom").append(button2);
+
+      // convert to svg
+      if (window.FontAwesome) window.FontAwesome.dom.i2svg();
+
       // convert to svg
       if (window.FontAwesome) window.FontAwesome.dom.i2svg();
 
@@ -271,6 +311,27 @@ export default {
     });
   },
   watch: {
+    /* Watch length of GeoJSON data */
+    lengthGeojson(nextValue, prevValue) {
+      this.updateAggLayer();
+    },
+    /* Watch the current agg layer */
+    aggLayer(nextValue, prevValue) {
+      let map = this.mapObject;
+
+      // Remove old layer
+      if (prevValue != null) map.removeLayer(this.layers[prevValue]);
+
+      // Add new layer
+      if (nextValue != null) {
+        this.addAggLayer(nextValue);
+        this.updateAggLayer();
+      }
+
+      // Show/hide download button
+      if (nextValue != null) $("#downloadButton").show();
+      else $("#downloadButton").hide();
+    },
     activeLayers(nextValue, prevValue) {
       let map = this.mapObject;
 
@@ -299,8 +360,85 @@ export default {
     },
   },
   methods: {
+    updateAggLayer() {
+      // If we have an agg layer, update the colors
+      // Update style
+      let aggLayer = this.layers[this.aggLayer];
+      if (aggLayer) {
+        aggLayer.setStyle(this.aggStyleFunction);
+
+        // Update tooltip
+        aggLayer.eachFeature((layer) => {
+          layer.bindTooltip(this.getAggTooltip(layer.feature), {
+            permanent: false,
+            sticky: true,
+            opacity: 1.0,
+          });
+        });
+      }
+    },
+    getAggLayerGeoJSON() {
+      let layer = this.layers[this.aggLayer];
+      let collection = { type: "FeatureCollection", features: [] };
+
+      layer.eachFeature((layer) => {
+        let feature = layer.toGeoJSON();
+        let key = this.getAggKey(feature);
+        key = feature.properties[key];
+
+        // Get the total count
+        let count = this.aggCounts.get(key) || 0;
+
+        // Set the properties and save
+        feature.properties = { name: key, shooting_victims: count };
+        collection.features.push(feature);
+      });
+
+      // Download as geojson
+      let content = JSON.stringify(collection);
+      let fileName = `shooting-victims-by-${this.aggLayer}.json`;
+      let contentType = "text/json";
+
+      // Download it
+      const a = document.createElement("a");
+      const file = new Blob([content], { type: contentType });
+      a.href = URL.createObjectURL(file);
+      a.download = fileName;
+      a.click();
+    },
+    showLegend() {
+      return this.isActive("streets") | (this.activeLayers.length == 0);
+    },
     isActive(layer) {
       return this.activeLayers.indexOf(layer) !== -1;
+    },
+    getAggTooltip(feature) {
+      let out = [];
+
+      // The name of each geographic region
+      let key = this.getAggKey(feature);
+      key = feature.properties[key];
+
+      // Get the total count
+      let count = this.aggCounts.get(key) || 0;
+
+      // Determine the title to show
+      let title;
+      if ((this.aggLayer == "council") | (this.aggLayer == "police"))
+        title = `District #${key}`;
+      else title = key;
+
+      // Return the text
+      let text = `<div class="tooltip-title">${title}</div>
+                  <table class="w-100">
+                  <tbody>`;
+      text += ` <tr class="tooltip-line">
+                <td class="tooltip-line-header">Shooting Victims</td>
+              <td>${count.toFixed(0)}</td>
+              </tr>`;
+      text += `</tbody>
+              </table>`;
+      return text;
     },
     getStreetTooltip(data) {
       let out = [];
@@ -325,12 +463,39 @@ export default {
       else if (currentZoom > 12) return 3;
       else return 2;
     },
+    getAggKey(feauture) {
+      if (this.aggLayer == "council") return "DISTRICT";
+      else if (this.aggLayer == "zip") return "zip_code";
+      else if (this.aggLayer == "police") return "DISTRICT_";
+      else if (this.aggLayer == "hood") return "neighborhood";
+    },
+    aggStyleFunction(feature) {
+      let key = this.getAggKey(feature);
+      key = feature.properties[key];
+
+      let color = this.aggColorScale(this.aggCounts.get(key) || 0);
+      return {
+        color: "#cfcfcf",
+        fillColor: color,
+        weight: 1,
+        opacity: 1,
+        fillOpacity: 0.5,
+      };
+    },
+    onEachFeatureAgg(feature, layer) {
+      layer.bindTooltip(this.getAggTooltip(layer.feature), {
+        permanent: false,
+        sticky: true,
+        opacity: 1.0,
+      });
+    },
     streetStyleFunction(feature) {
       return {
         weight: this.getWeightBasedOnZoom(),
         color: this.getColor(feature.properties),
       };
     },
+
     onEachFeatureStreets(feature, layer) {
       layer.bindTooltip(this.getStreetTooltip(layer.feature.properties), {
         permanent: false,
@@ -344,10 +509,17 @@ export default {
     setActiveLayers(layers) {
       this.activeLayers = layers;
     },
+    setAggLayer(layer) {
+      this.aggLayer = layer;
+    },
     addStreetHotSpots() {
       let map = this.mapObject;
       if (map.hasLayer(this.layers.streets))
         map.removeLayer(this.layers.streets);
+
+      // Update legend color scale
+      this.legendColorScale = interpolatePlasma;
+      this.legendRange = [0.5, 1.0];
 
       this.layers.streets = esri.featureLayer({
         url: this.streetsURL,
@@ -369,6 +541,29 @@ export default {
 
       // Add to map
       this.layers.streets.addTo(map);
+    },
+    addAggLayer(name) {
+      let map = this.mapObject;
+
+      // Remove main layers
+      this.activeLayers = [];
+
+      // Update legend color scale
+      this.legendColorScale = interpolateReds;
+      this.legendRange = [0, 1];
+
+      if (this.layers[name] == null) {
+        this.layers[name] = esri.featureLayer({
+          url: this.aggLayerURLs[name],
+          style: this.aggStyleFunction,
+          onEachFeature: this.onEachFeatureAgg,
+        });
+      }
+
+      // Add new layer
+      if (!map.hasLayer(this.layers[name])) {
+        map.addLayer(this.layers[name]);
+      }
     },
     addHeatmap() {
       let map = this.mapObject;

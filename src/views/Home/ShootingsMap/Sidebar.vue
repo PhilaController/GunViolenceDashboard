@@ -58,6 +58,7 @@
                 hide-details
                 multiple
                 :ripple="false"
+                :disabled="mapLayersDisabled"
                 @click.native.capture="handleCheckboxClick"
               >
                 <template v-slot:label>
@@ -73,6 +74,35 @@
                 </template>
               </v-checkbox>
             </v-hover>
+          </v-expansion-panel-content>
+        </v-expansion-panel>
+
+        <!-- Aggregation Layers -->
+        <v-expansion-panel class="dark-theme">
+          <v-expansion-panel-header
+            ><div class="header-content">Aggregation Layers</div>
+            <div
+              v-if="showReset('aggLayer')"
+              class="reset-link"
+              @click.capture="handleResetClick($event, 'aggLayer')"
+            >
+              Reset
+            </div>
+          </v-expansion-panel-header>
+          <v-expansion-panel-content>
+            <v-radio-group v-model="selectedAggLayers">
+              <v-radio
+                v-for="layerName in allowedAggLayers"
+                :key="layerName"
+                :label="getAlias(layerName, 'aggLayer')"
+                :value="layerName"
+                color="#7ab5e5"
+                hide-details
+                :ripple="false"
+                @click.native.capture="handleCheckboxClick"
+              >
+              </v-radio>
+            </v-radio-group>
           </v-expansion-panel-content>
         </v-expansion-panel>
 
@@ -277,11 +307,14 @@ export default {
       allowedRaces: ["W", "B", "H", "Other/Unknown"],
       allowedGenders: ["M", "F"],
       allowedLayers: ["points", "heatmap", "streets"],
+      allowedAggLayers: ["council", "zip", "police", "hood"],
       fatalOnly: false,
       arrestsOnly: false,
       selectedLayers: ["points"],
+      selectedAggLayers: null,
       selectedRaces: ["W", "B", "H", "Other/Unknown"],
       selectedGenders: ["M", "F"],
+      mapLayersDisabled: false,
       ageRange: [0, 100],
       dateRange: [1, 366],
       aliases: {
@@ -298,6 +331,12 @@ export default {
           points: "Point locations",
           heatmap: "Heat map",
           streets: "Hot spots by street block",
+        },
+        aggLayer: {
+          council: "Council District",
+          police: "Police District",
+          zip: "ZIP Code",
+          hood: "Neighborhood",
         },
       },
     };
@@ -318,6 +357,14 @@ export default {
     },
     selectedLayers(nextValue, prevValue) {
       this.$emit("update-layer", nextValue);
+    },
+    selectedAggLayers(nextValue, prevValue) {
+      this.$emit("update-agg-layer", nextValue);
+
+      if (nextValue !== null) {
+        this.mapLayersDisabled = true;
+        if (this.selectedLayers.length > 0) this.selectedLayers = [];
+      } else this.mapLayersDisabled = false;
     },
     selectedRaces(nextValue, prevValue) {
       this.$emit("update-race", nextValue);
@@ -368,7 +415,9 @@ export default {
         )
           return true;
         else return false;
-      } else return this.currentFilters[filterName] !== null;
+      } else if (filterName == "aggLayer")
+        return this.selectedAggLayers !== null;
+      else return this.currentFilters[filterName] !== null;
     },
     setDateSlider(value) {
       this.dateRange = value;
@@ -390,12 +439,19 @@ export default {
       }
     },
     handleResetClick(event, filterName) {
-      // Send the reset event
-      this.$emit("reset", filterName);
-
       // Stop button from expanding
       event.stopPropagation();
       event.preventDefault();
+
+      if (filterName == "aggLayer") {
+        this.selectedAggLayers = null;
+        this.selectedLayers = ["points"];
+        this.mapLayersDisabled = false;
+        return;
+      }
+
+      // Send the reset event
+      this.$emit("reset", filterName);
 
       // Reset filter
       this.resetFilter(filterName);
@@ -418,6 +474,10 @@ export default {
     handleOnlyClickLayer(event, value) {
       this.onlyClick = true;
       this.selectedLayers = [value];
+    },
+    handleOnlyClickAggLayer(event, value) {
+      this.onlyClick = true;
+      this.selectedAggLayers = value;
     },
     handleOnlyClickGender(event, value) {
       this.onlyClick = true;

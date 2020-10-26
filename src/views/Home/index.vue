@@ -24,6 +24,7 @@
         />
         <ShootingsMapSidebar
           ref="mapSidebar"
+          @update-agg-layer="updateAggLayer"
           @update-layer="updateLayer"
           @update-date="updateDateFilter"
           @update-fatal="updateFatalFilter"
@@ -130,11 +131,12 @@ export default {
     updateLayer(layers) {
       this.$refs.shootingsMap.setActiveLayers(layers);
     },
+    updateAggLayer(layer) {
+      this.$refs.shootingsMap.setAggLayer(layer);
+    },
     handleReset(filterName) {
-      if ((filterName == "date") | (filterName == "age")) {
-        this.currentFilters[filterName] = null;
-        this.applyFilter(filterName);
-      }
+      this.currentFilters[filterName] = null;
+      this.applyFilter(filterName);
     },
     setShootingCounts() {
       this.fatalCount = this.filteredData.filter(
@@ -161,7 +163,10 @@ export default {
     },
     updateAgeFilter(value) {
       // Increase max by one due to crossfilter top point being exclusive
-      this.currentFilters.age = [value[0], value[1] + 1];
+      this.currentFilters.age = (d) =>
+        (d != "Unknown") &
+        (parseInt(d) >= value[0]) &
+        (parseInt(d) <= value[1]);
       this.applyFilter("age");
     },
     updateGenderFilter(value) {
@@ -215,14 +220,17 @@ export default {
         // Clear filters
         this.$refs.mapSidebar.resetAllFilters();
 
-        // Get fatal counts
-        this.setShootingCounts();
+        // Wait until done updating
+        this.$nextTick(() => {
+          // Get fatal counts
+          this.setShootingCounts();
 
-        this.allowedAgeRange = this.getAllowedAges();
-        this.allowedDateRange = this.getAllowedDates();
+          this.allowedAgeRange = this.getAllowedAges();
+          this.allowedDateRange = this.getAllowedDates();
 
-        // call callback
-        this.setDateSliderValue();
+          // call callback
+          this.setDateSliderValue();
+        });
       }
     },
     createCrossfilter(data, year) {
@@ -266,15 +274,18 @@ export default {
             // Clear filters
             this.$refs.mapSidebar.resetAllFilters();
 
-            // Get fatal counts
-            this.setShootingCounts();
+            // Wait until done updating and then reset
+            this.$nextTick(() => {
+              // Get fatal counts
+              this.setShootingCounts();
 
-            // Set the allowed slider ranges
-            this.allowedAgeRange = this.getAllowedAges();
-            this.allowedDateRange = this.getAllowedDates();
+              // Set the allowed slider ranges
+              this.allowedAgeRange = this.getAllowedAges();
+              this.allowedDateRange = this.getAllowedDates();
 
-            // Call callback
-            if (callback) callback();
+              // Call callback
+              if (callback) callback();
+            });
           });
       }
     },
