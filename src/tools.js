@@ -22,3 +22,23 @@ export function getDayOfYear(dt) {
 export function formatNumber(d) {
     return d.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
 }
+
+export function getMsSinceMidnight(d) {
+    var e = new Date(d);
+    return d - e.setHours(0, 0, 0, 0);
+}
+
+export function msToTimeString(ms) {
+    let x = ms / 1000;
+    let seconds = x % 60;
+    x /= 60;
+    let minutes = Math.floor(x % 60);
+    x /= 60;
+    let hours = Math.floor(x % 24);
+    var ampm = hours >= 12 ? 'PM' : 'AM';
+    hours = hours % 12;
+    hours = hours ? hours : 12; // the hour '0' should be '12'
+    minutes = minutes < 10 ? '0' + minutes : minutes;
+    var strTime = hours + ':' + minutes + ' ' + ampm;
+    return strTime;
+}

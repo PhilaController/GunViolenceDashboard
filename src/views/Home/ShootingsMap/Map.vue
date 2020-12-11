@@ -36,6 +36,7 @@
 
 <script>
 import Legend from "./Legend";
+import { msToTimeString } from "@/tools.js";
 
 import L from "leaflet";
 import * as Vue2Leaflet from "vue2-leaflet";
@@ -194,6 +195,9 @@ export default {
 
         text += ` <tr class="tooltip-line">
                     <td>${data.date.toDateString()}</td>
+                  </tr>`;
+        text += ` <tr class="tooltip-line">
+                    <td>${msToTimeString(data.time)}</td>
                   </tr>`;
         text += ` <tr class="tooltip-line">
                   <td>${data.block_number} ${data.street_name}</td>

@@ -27,6 +27,7 @@
           @update-agg-layer="updateAggLayer"
           @update-layer="updateLayer"
           @update-date="updateDateFilter"
+          @update-time="updateTimeFilter"
           @update-fatal="updateFatalFilter"
           @update-arrests="updateArrestsFilter"
           @update-race="updateRaceFilter"
@@ -74,6 +75,7 @@ export default {
       crossfilters: {},
       dimensions: {
         date: {},
+        time: {},
         fatal: {},
         race: {},
         age: {},
@@ -83,6 +85,7 @@ export default {
       currentYear: new Date().getFullYear(),
       currentFilters: {
         date: null,
+        time: null,
         fatal: null,
         race: null,
         age: null,
@@ -196,6 +199,11 @@ export default {
         dateFromDay(this.selectedYear, value[1] + 1),
       ];
       this.applyFilter("date");
+    },
+    updateTimeFilter(value) {
+      // Increase max by one due to crossfilter top point being exclusive
+      this.currentFilters.time = [value[0], value[1] + 1];
+      this.applyFilter("time");
     },
     applyFilter(filterName) {
       // Filter by the date

@@ -136,6 +136,36 @@
           </v-expansion-panel-content>
         </v-expansion-panel>
 
+        <!-- Time Filter -->
+        <v-expansion-panel class="dark-theme">
+          <v-expansion-panel-header
+            ><div class="header-content">Time</div>
+            <div
+              v-if="showReset('time')"
+              class="reset-link"
+              @click.capture="handleResetClick($event, 'time')"
+            >
+              Reset
+            </div>
+          </v-expansion-panel-header>
+          <v-expansion-panel-content>
+            <vue-slider
+              class="time-slider"
+              v-model="timeRange"
+              :min="allowedTimeRange[0]"
+              :max="allowedTimeRange[1]"
+              :lazy="true"
+              tooltip="always"
+              :enableCross="false"
+              @drag-end="sendTimeUpdate"
+              :tooltip-placement="timeTooltipPlacement"
+              :tooltip-formatter="formatTimeSliderTooltip"
+              width="80%"
+              :clickable="false"
+            ></vue-slider>
+          </v-expansion-panel-content>
+        </v-expansion-panel>
+
         <!-- Race/Ethnicity -->
         <v-expansion-panel class="dark-theme">
           <v-expansion-panel-header
@@ -265,7 +295,12 @@
 </template>
 
 <script>
-import { getDayOfYear, dateFromDay, formatDate } from "@/tools.js";
+import {
+  getDayOfYear,
+  dateFromDay,
+  formatDate,
+  msToTimeString,
+} from "@/tools.js";
 import {
   VExpansionPanels,
   VExpansionPanel,
@@ -306,6 +341,7 @@ export default {
       onlyClick: false,
       allowedRaces: ["W", "B", "H", "Other/Unknown"],
       allowedGenders: ["M", "F"],
+      allowedTimeRange: [0, 86399999],
       allowedLayers: ["points", "heatmap", "streets"],
       allowedAggLayers: ["council", "zip", "police", "hood"],
       fatalOnly: false,
@@ -317,6 +353,7 @@ export default {
       mapLayersDisabled: false,
       ageRange: [0, 100],
       dateRange: [1, 366],
+      timeRange: [0, 86399999],
       aliases: {
         race: {
           W: "White (Non-Hispanic)",
@@ -428,6 +465,9 @@ export default {
     formatSliderTooltip(day) {
       return formatDate(this.selectedYear, day);
     },
+    formatTimeSliderTooltip(msSinceMidnight) {
+      return msToTimeString(msSinceMidnight);
+    },
     updateDateSlider(value) {
       this.$emit("update-date", value);
     },
@@ -460,6 +500,7 @@ export default {
       // Update the filters
       if (filterName == "date") this.dateRange = this.allowedDateRange;
       else if (filterName == "age") this.ageRange = this.allowedAgeRange;
+      else if (filterName == "time") this.timeRange = this.allowedTimeRange;
       else if (filterName == "sex") this.selectedGenders = ["M", "F"];
       else if (filterName == "race")
         this.selectedRaces = ["W", "B", "H", "Other/Unknown"];
@@ -491,6 +532,9 @@ export default {
     sendDateUpdate() {
       this.$emit("update-date", this.dateRange);
     },
+    sendTimeUpdate() {
+      this.$emit("update-time", this.timeRange);
+    },
     sendAgeUpdate() {
       this.$emit("update-age", this.ageRange);
     },
@@ -507,6 +551,11 @@ export default {
       if (this.fatalOnly) return false;
       if (this.arrestsOnly) return false;
       return true;
+    },
+    timeTooltipPlacement() {
+      if (this.timeRange[1] - this.timeRange[0] < 8 * 60 * 60 * 1000)
+        return ["top", "bottom"];
+      else return ["bottom", "bottom"];
     },
     dateTooltipPlacement() {
       if (this.dateRange[1] - this.dateRange[0] < 60) return ["top", "bottom"];
@@ -623,7 +672,8 @@ button:focus {
 
 /* Sliders */
 .age-slider,
-.date-slider {
+.date-slider,
+.time-slider {
   margin-top: 30px;
   margin-bottom: 40px;
   margin-left: auto;

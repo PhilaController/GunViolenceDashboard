@@ -2,10 +2,12 @@ import Vue from 'vue'
 import Vuex from 'vuex'
 import { json } from "d3-fetch";
 import { timeParse } from "d3-time-format";
+import { getMsSinceMidnight } from "@/tools.js"
 
 Vue.use(Vuex)
 
 const parseTime = timeParse("%Y/%m/%d %H:%M:%S");
+const HOURS12 = 12 * 60 * 60 * 1000;
 
 export default new Vuex.Store({
   state: {
@@ -29,10 +31,9 @@ export default new Vuex.Store({
         let features = data.features;
 
         // Convert date strings to Date objects
-        let dates = [];
         features.forEach(function (d) {
           d.properties["date"] = parseTime(d.properties["date"]);
-          dates.push(d.properties["date"])
+          d.properties["time"] = getMsSinceMidnight(d.properties["date"]);
         });
 
         // Save data and latest date
