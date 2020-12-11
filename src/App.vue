@@ -144,7 +144,7 @@ export default {
   background-color: #353d42;
   box-shadow: none !important;
 }
-.dropdown-menu {
+.year-dropdown .dropdown-menu {
   background-color: #353d42;
   min-width: 0rem;
   text-align: right;
@@ -152,12 +152,12 @@ export default {
   padding-left: 5px;
   padding-right: 5px;
 }
-.dropdown-item {
+.year-dropdown .dropdown-item {
   color: white !important;
   font-weight: 500;
   padding: 0.25rem 1rem !important;
 }
-.dropdown-item:hover {
+.year-dropdown .dropdown-item:hover {
   background-color: #b2beb5 !important;
 }
 .year-dropdown {
