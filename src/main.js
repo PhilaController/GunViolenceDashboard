@@ -1,7 +1,7 @@
 import Vue from 'vue'
 import App from '@/App'
 import store from '@/store'
-import router from "@/router";
+import getRouter from "@/router";
 import vuetify from '@/plugins/vuetify' // path to vuetify export
 import { Icon } from "leaflet";
 import "leaflet/dist/leaflet.css";
@@ -38,9 +38,13 @@ let helpMessage = `<p class='help-message'>
   </p>`;
 $(".back-link").after(helpMessage);
 
-new Vue({
-  store,
-  router,
-  vuetify,
-  render: h => h(App)
-}).$mount('#app')
+getRouter().then(router => {
+    new Vue({
+    store,
+    router,
+    vuetify,
+    render: h => h(App)
+  }).$mount('#app')
+})
+
+

@@ -98,19 +98,20 @@ export default {
   },
   created() {
     this.fetchHomicideData();
-    this.fetchData(this.selectedYear);
+    this.fetchData(this.selectedYear)
   },
   watch: {
-    selectedYear(nextValue, prevValue) {
+    $route(to, from) {
+      console.log("to = ", to)
       if (nextValue !== prevValue) this.handleYearSelection(nextValue);
-    },
+    }
   },
   computed: {
     isLoading() {
       return this.filteredData == null;
     },
     selectedYear() {
-      return this.$store.state.selectedYear;
+      return this.$route.params.selectedYear;
     },
     pointsGeoJSON() {
       if (this.filteredData)
@@ -210,6 +211,7 @@ export default {
       this.$refs.mapSidebar.setDateSlider(this.getAllowedDates());
     },
     handleYearSelection(year) {
+      console.log("FUCK 2", year);
       // Fetch data
       if (!this.crossfilters[year]) {
         this.fetchData(year, this.setDateSliderValue);

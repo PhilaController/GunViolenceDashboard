@@ -2,6 +2,7 @@ import Vue from 'vue'
 import Vuex from 'vuex'
 import { json } from "d3-fetch";
 import { timeParse } from "d3-time-format";
+import { max } from "d3-array";
 
 Vue.use(Vuex)
 
@@ -10,7 +11,8 @@ const parseTime = timeParse("%Y/%m/%d %H:%M:%S");
 export default new Vuex.Store({
   state: {
     data: null,
-    selectedYear: 2020
+    homicides: null,
+    dataYears: null,
   },
   mutations: {
     setValue(state, payload) {
@@ -23,7 +25,10 @@ export default new Vuex.Store({
       // Pull from Github
       let url = `https://raw.githubusercontent.com/PhiladelphiaController/gun-violence-dashboard-data/master/gun_violence_dashboard_data/data/processed/shootings_${year}.json`
 
+      console.log("url = ", url)
       return json(url).then(function (data) {
+
+        console.log("data = ", data)
 
         // Save features
         let features = data.features;
@@ -49,6 +54,17 @@ export default new Vuex.Store({
 
       return json(url).then(function (data) {
         store.commit("setValue", { value: data, key: 'homicides' });
+        return data;
+      });
+
+    },
+    fetchDataYears(store) {
+
+      // Pull from Github
+      let url = `https://raw.githubusercontent.com/PhiladelphiaController/gun-violence-dashboard-data/master/gun_violence_dashboard_data/data/processed/data_years.json`
+
+      return json(url).then(function (data) {
+        store.commit("setValue", { value: data, key: 'dataYears' });
         return data;
       });
 

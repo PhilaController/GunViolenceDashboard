@@ -3,7 +3,7 @@
     <!-- Top app navbar -->
     <div class="app-navbar">
       <!-- Methods link -->
-      <div v-show="$router.currentRoute.path == '/'">
+      <div v-show="$router.currentRoute.path != '/about'">
         <router-link
           to="/about"
           class="router-link"
@@ -20,7 +20,7 @@
       </div>
 
       <!-- Year dropdown -->
-      <div v-if="$router.currentRoute.path == '/'" class="year-message-content">
+      <div v-if="$router.currentRoute.path != '/about'" class="year-message-content">
         <div>Viewing data for</div>
         <div class="date-color year-dropdown">
           <button
@@ -31,7 +31,7 @@
             aria-haspopup="true"
             aria-expanded="false"
           >
-            {{ selectedYear }}
+            {{ $router.currentRoute.params.selectedYear }}
           </button>
           <div
             class="dropdown-menu date-color"
@@ -65,23 +65,27 @@ export default {
     return {
       minYear: 2015,
       currentYear: new Date().getFullYear(),
+      dataYears: null,
     };
   },
+  created() {
+    this.fetchDataYears();
+  },
   computed: {
-    selectedYear() {
-      return this.$store.state.selectedYear;
-    },
-    dataYears() {
-      let out = [];
-      for (let year = this.minYear; year <= this.currentYear; year++) {
-        out.push(year);
-      }
-      return out;
-    },
   },
   methods: {
+    fetchDataYears() {
+      this.dataYears = this.$store.state.dataYears;
+
+      if (!this.dataYears) {
+        this.$store.dispatch("fetchDataYears").then((data) => {
+          this.dataYears = data;
+        });
+      }
+    },
     handleYearSelection(year) {
-      this.$store.commit("setValue", { value: year, key: "selectedYear" });
+      if (year !== this.selectedYear)
+        this.$router.push(`/${year}`);
     },
   },
 };
@@ -144,7 +148,7 @@ export default {
   background-color: #353d42;
   box-shadow: none !important;
 }
-.dropdown-menu {
+.year-dropdown .dropdown-menu {
   background-color: #353d42;
   min-width: 0rem;
   text-align: right;
@@ -152,12 +156,12 @@ export default {
   padding-left: 5px;
   padding-right: 5px;
 }
-.dropdown-item {
+.year-dropdown .dropdown-item {
   color: white !important;
   font-weight: 500;
   padding: 0.25rem 1rem !important;
 }
-.dropdown-item:hover {
+.year-dropdown .dropdown-item:hover {
   background-color: #b2beb5 !important;
 }
 .year-dropdown {
