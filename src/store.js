@@ -25,10 +25,7 @@ export default new Vuex.Store({
       // Pull from Github
       let url = `https://raw.githubusercontent.com/PhiladelphiaController/gun-violence-dashboard-data/master/gun_violence_dashboard_data/data/processed/shootings_${year}.json`
 
-      console.log("url = ", url)
       return json(url).then(function (data) {
-
-        console.log("data = ", data)
 
         // Save features
         let features = data.features;

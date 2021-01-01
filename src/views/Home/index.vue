@@ -102,7 +102,6 @@ export default {
   },
   watch: {
     $route(to, from) {
-      console.log("to = ", to)
       if (nextValue !== prevValue) this.handleYearSelection(nextValue);
     }
   },
@@ -211,7 +210,6 @@ export default {
       this.$refs.mapSidebar.setDateSlider(this.getAllowedDates());
     },
     handleYearSelection(year) {
-      console.log("FUCK 2", year);
       // Fetch data
       if (!this.crossfilters[year]) {
         this.fetchData(year, this.setDateSliderValue);

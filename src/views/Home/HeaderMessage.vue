@@ -39,6 +39,8 @@
 </template>
 
 <script>
+import { max } from "d3-array";
+
 export default {
   props: [
     "fatal",
@@ -53,6 +55,9 @@ export default {
       if (this.homicideData) {
         return this.getHomicideTotal(this.selectedYear);
       }
+    },
+    maxHomicideYear() {
+      return max(Object.keys(this.homicideData));
     },
     homicideChange() {
       if (this.homicideTotal) {
@@ -75,7 +80,7 @@ export default {
   },
   methods: {
     getHomicideTotal(year) {
-      if (this.selectedYear == this.currentYear)
+      if (year == this.maxHomicideYear)
         return this.homicideData[year].ytd;
       else return this.homicideData[year].annual;
     },
