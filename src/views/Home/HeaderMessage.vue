@@ -80,7 +80,7 @@ export default {
   },
   methods: {
     getHomicideTotal(year) {
-      if (year == this.maxHomicideYear)
+      if (this.selectedYear == this.maxHomicideYear)
         return this.homicideData[year].ytd;
       else return this.homicideData[year].annual;
     },

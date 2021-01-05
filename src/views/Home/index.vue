@@ -94,21 +94,20 @@ export default {
       fatalCount: 0,
       nonfatalCount: 0,
       maxDate: null,
+      isLoading: true,
     };
   },
   created() {
     this.fetchHomicideData();
-    this.fetchData(this.selectedYear)
+    this.handleYearSelection(this.selectedYear);
   },
   watch: {
     $route(to, from) {
-      if (nextValue !== prevValue) this.handleYearSelection(nextValue);
-    }
+        this.isLoading = true;
+    },
+
   },
   computed: {
-    isLoading() {
-      return this.filteredData == null;
-    },
     selectedYear() {
       return this.$route.params.selectedYear;
     },
@@ -231,6 +230,8 @@ export default {
           // call callback
           this.setDateSliderValue();
         });
+
+        this.isLoading = false;
       }
     },
     createCrossfilter(data, year) {
@@ -286,8 +287,10 @@ export default {
               // Call callback
               if (callback) callback();
             });
+
+            this.isLoading = false;
           });
-      }
+      } else this.isLoading = false;
     },
   },
 };
