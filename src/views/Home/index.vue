@@ -97,23 +97,22 @@ export default {
       fatalCount: 0,
       nonfatalCount: 0,
       maxDate: null,
+      isLoading: true,
     };
   },
   created() {
     this.fetchHomicideData();
-    this.fetchData(this.selectedYear);
+    this.handleYearSelection(this.selectedYear);
   },
   watch: {
-    selectedYear(nextValue, prevValue) {
-      if (nextValue !== prevValue) this.handleYearSelection(nextValue);
+    $route(to, from) {
+        this.isLoading = true;
     },
+
   },
   computed: {
-    isLoading() {
-      return this.filteredData == null;
-    },
     selectedYear() {
-      return this.$store.state.selectedYear;
+      return this.$route.params.selectedYear;
     },
     pointsGeoJSON() {
       if (this.filteredData)
@@ -239,6 +238,8 @@ export default {
           // call callback
           this.setDateSliderValue();
         });
+
+        this.isLoading = false;
       }
     },
     createCrossfilter(data, year) {
@@ -294,8 +295,10 @@ export default {
               // Call callback
               if (callback) callback();
             });
+
+            this.isLoading = false;
           });
-      }
+      } else this.isLoading = false;
     },
   },
 };

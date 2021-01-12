@@ -194,11 +194,7 @@ export default {
   },
   computed: {
     dataYears() {
-      let out = [];
-      for (let year = this.minYear; year <= this.currentYear; year++) {
-        out.push(year);
-      }
-      return out;
+      return this.$store.state.dataYears;
     },
   },
   mounted() {

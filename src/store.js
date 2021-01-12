@@ -12,7 +12,8 @@ const HOURS12 = 12 * 60 * 60 * 1000;
 export default new Vuex.Store({
   state: {
     data: null,
-    selectedYear: 2020
+    homicides: null,
+    dataYears: null,
   },
   mutations: {
     setValue(state, payload) {
@@ -50,6 +51,17 @@ export default new Vuex.Store({
 
       return json(url).then(function (data) {
         store.commit("setValue", { value: data, key: 'homicides' });
+        return data;
+      });
+
+    },
+    fetchDataYears(store) {
+
+      // Pull from Github
+      let url = `https://raw.githubusercontent.com/PhiladelphiaController/gun-violence-dashboard-data/master/gun_violence_dashboard_data/data/processed/data_years.json`
+
+      return json(url).then(function (data) {
+        store.commit("setValue", { value: data, key: 'dataYears' });
         return data;
       });
 

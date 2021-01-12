@@ -6,10 +6,10 @@
         <span style="color: #7ab5e5">{{ formatNumber(pointsOnMap) }}</span>
         shooting victim<span v-if="pointsOnMap !== 1">s</span>
       </div>
-      <div class="sidebar-note" v-bind:class="{ hide: missingPoints == 0 }">
+      <!-- <div class="sidebar-note" v-bind:class="{ hide: missingPoints == 0 }">
         Note: {{ missingPoints }} victim<span v-if="missingPoints > 1">s</span>
         not shown due to missing locations
-      </div>
+      </div> -->
     </div>
 
     <!-- Scrollable content -->
