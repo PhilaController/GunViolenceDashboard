@@ -106,9 +106,13 @@ export default {
   },
   watch: {
     $route(to, from) {
-        this.isLoading = true;
-    },
+      this.isLoading = true;
 
+      // If not a fresh page, call handleYearSelection
+      // Otherwise, it's called in created()
+      let year = to.params.selectedYear;
+      if (this.crossfilters[year]) this.handleYearSelection(year);
+    },
   },
   computed: {
     selectedYear() {
@@ -237,9 +241,10 @@ export default {
 
           // call callback
           this.setDateSliderValue();
-        });
 
-        this.isLoading = false;
+          // turn off loading
+          this.isLoading = false;
+        });
       }
     },
     createCrossfilter(data, year) {
