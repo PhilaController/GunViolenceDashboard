@@ -44,7 +44,11 @@
       </div>
 
       <!-- Charts -->
-      <ChartDashboard :filteredData="filteredData" />
+      <ChartDashboard
+        ref="chartDashboard"
+        :filteredData="filteredData"
+        :key="dashboardKey"
+      />
     </div>
   </v-app>
 </template>
@@ -70,6 +74,7 @@ export default {
   },
   data() {
     return {
+      dashboardKey: 0,
       filteredData: null,
       homicideData: null,
       crossfilters: {},
@@ -103,6 +108,10 @@ export default {
   created() {
     this.fetchHomicideData();
     this.handleYearSelection(this.selectedYear);
+  },
+  activated() {
+    // Force the dashboard to re-render itself
+    this.dashboardKey += 1;
   },
   watch: {
     $route(to, from) {
