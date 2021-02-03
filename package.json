@@ -8,7 +8,7 @@
         "lint": "vue-cli-service lint"
     },
     "dependencies": {
-        "apexcharts": "^3.23.1",
+        "apexcharts": "^3.24.0",
         "core-js": "^3.8.1",
         "crossfilter2": "^1.5.4",
         "d3-array": "^2.9.1",
@@ -23,12 +23,10 @@
         "pretty-checkbox": "^3.0.3",
         "vue": "^2.6.11",
         "vue-apexcharts": "^1.6.0",
-        "vue-calendar-heatmap": "github:julienr114/vue-calendar-heatmap",
         "vue-loading-overlay": "^3.4.2",
         "vue-router": "^3.4.9",
         "vue-slider-component": "^3.2.11",
         "vue2-leaflet": "^2.6.0",
-        "vuelidate": "^0.7.6",
         "vuetify": "^2.4.0",
         "vuex": "^3.6.0"
     },
