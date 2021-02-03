@@ -20,7 +20,10 @@
       </div>
 
       <!-- Year dropdown -->
-      <div v-if="$router.currentRoute.path != '/about'" class="year-message-content">
+      <div
+        v-if="$router.currentRoute.path != '/about'"
+        class="year-message-content"
+      >
         <div>Viewing data for</div>
         <div class="date-color year-dropdown">
           <button
@@ -69,10 +72,15 @@ export default {
     };
   },
   created() {
+    // IMPORTANT: make sure FA does not watch SVG elements
+    if (window.FontAwesome) {
+      window.FontAwesome.config.observeMutations = false;
+      window.FontAwesome.config.searchPseudoElements = false;
+    }
+
     this.fetchDataYears();
   },
-  computed: {
-  },
+  computed: {},
   methods: {
     fetchDataYears() {
       this.dataYears = this.$store.state.dataYears;
@@ -84,8 +92,7 @@ export default {
       }
     },
     handleYearSelection(year) {
-      if (year !== this.selectedYear)
-        this.$router.push(`/${year}`);
+      if (year !== this.selectedYear) this.$router.push(`/${year}`);
     },
   },
 };
