@@ -277,9 +277,6 @@ export default {
       // convert to svg
       if (window.FontAwesome) window.FontAwesome.dom.i2svg();
 
-      // convert to svg
-      if (window.FontAwesome) window.FontAwesome.dom.i2svg();
-
       // Add ArcGIS Online basemap
       esri
         .basemapLayer("DarkGray", {
