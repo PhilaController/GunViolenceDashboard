@@ -7,10 +7,6 @@ import { Icon } from "leaflet";
 import "leaflet/dist/leaflet.css";
 
 
-// make FA does not watch SVG elements
-if (window.FontAwesome) {
-  window.FontAwesome.config.observeMutations = false;
-}
 Vue.config.productionTip = false;
 
 // Fix leaflet icons
@@ -39,7 +35,7 @@ let helpMessage = `<p class='help-message'>
 $(".back-link").after(helpMessage);
 
 getRouter().then(router => {
-    new Vue({
+  new Vue({
     store,
     router,
     vuetify,
