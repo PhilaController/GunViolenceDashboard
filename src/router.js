@@ -6,12 +6,12 @@ import { json } from "d3-fetch";
 
 Vue.use(Router);
 
-export default function() {
+export default function () {
 
-      // Pull from Github
-      let url = `https://raw.githubusercontent.com/PhiladelphiaController/gun-violence-dashboard-data/master/gun_violence_dashboard_data/data/processed/data_years.json`
+    // Pull from Github
+    let url = `https://raw.githubusercontent.com/PhiladelphiaController/gun-violence-dashboard-data/master/gun_violence_dashboard_data/data/processed/data_years.json`
 
-      return json(url).then(function (data) {
+    return json(url).then(function (data) {
 
         return new Router({
             routes: [
