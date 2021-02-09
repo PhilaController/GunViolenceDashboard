@@ -113,6 +113,17 @@ export default {
     // Force the dashboard to re-render itself
     this.dashboardKey += 1;
   },
+  deactivated() {
+    // -------------------
+    // When make is restored, make sure it's back in the default position
+    // -------------------
+    // Restore points and remove agg layers
+    this.$refs.mapSidebar.selectedLayers = ["points"];
+    this.$refs.mapSidebar.selectedAggLayers = null;
+
+    // Zoom to home
+    this.$refs.shootingsMap.zoomHome();
+  },
   watch: {
     $route(to, from) {
       this.isLoading = true;
