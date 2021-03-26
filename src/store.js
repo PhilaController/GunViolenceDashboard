@@ -24,7 +24,7 @@ export default new Vuex.Store({
     fetchData(store, { year }) {
 
       // Pull from Github
-      let url = `https://raw.githubusercontent.com/PhiladelphiaController/gun-violence-dashboard-data/master/gun_violence_dashboard_data/data/processed/shootings_${year}.json`
+      let url = `https://raw.githubusercontent.com/PhiladelphiaController/gun-violence-dashboard-data/footprints/gun_violence_dashboard_data/data/processed/shootings_${year}.json`
 
       return json(url).then(function (data) {
 

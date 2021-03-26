@@ -33,6 +33,7 @@
           @update-race="updateRaceFilter"
           @update-gender="updateGenderFilter"
           @update-age="updateAgeFilter"
+          @update-footprints="updateFootprintFilter"
           @reset="handleReset"
           :pointsOnMap="pointsOnMap"
           :filteredSize="filteredSize"
@@ -86,6 +87,7 @@ export default {
         age: {},
         sex: {},
         has_court_case: {},
+        footprint: {},
       },
       currentYear: new Date().getFullYear(),
       currentFilters: {
@@ -96,6 +98,7 @@ export default {
         age: null,
         sex: null,
         has_court_case: null,
+        footprint: null,
       },
       allowedAgeRange: [0, 100],
       allowedDateRange: [1, 366],
@@ -156,6 +159,14 @@ export default {
   methods: {
     updateLayer(layers) {
       this.$refs.shootingsMap.setActiveLayers(layers);
+    },
+    updateFootprintFilter(value) {
+      this.$refs.shootingsMap.setActiveFootprints(value);
+      console.log(value);
+      if (value.length > 0)
+        this.currentFilters.footprint = (d) => value.indexOf(d) !== -1;
+      else this.currentFilters.footprint = null;
+      this.applyFilter("footprint");
     },
     updateAggLayer(layer) {
       this.$refs.shootingsMap.setAggLayer(layer);

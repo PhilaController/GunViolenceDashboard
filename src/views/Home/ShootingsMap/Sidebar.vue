@@ -106,6 +106,45 @@
           </v-expansion-panel-content>
         </v-expansion-panel>
 
+        <!-- Program Footprints -->
+        <v-expansion-panel class="dark-theme">
+          <v-expansion-panel-header
+            >Program Footprints</v-expansion-panel-header
+          >
+          <v-expansion-panel-content>
+            <v-hover
+              v-for="footprintName in allowedFootprints"
+              :key="footprintName"
+            >
+              <v-checkbox
+                slot-scope="{ hover }"
+                :value="footprintName"
+                v-model="selectedFootprints"
+                color="#7ab5e5"
+                hide-details
+                multiple
+                :ripple="false"
+                :disabled="mapLayersDisabled"
+                @click.native.capture="handleCheckboxClick"
+              >
+                <template v-slot:label>
+                  <div>
+                    {{ footprintName }}
+                    <span
+                      v-if="hover"
+                      class="only-link"
+                      v-on:click.stop="
+                        handleOnlyClickFootprint($event, footprintName)
+                      "
+                      >only</span
+                    >
+                  </div>
+                </template>
+              </v-checkbox>
+            </v-hover>
+          </v-expansion-panel-content>
+        </v-expansion-panel>
+
         <!-- Date Filter -->
         <v-expansion-panel class="dark-theme">
           <v-expansion-panel-header
@@ -343,10 +382,17 @@ export default {
       allowedGenders: ["M", "F"],
       allowedTimeRange: [0, 86399999],
       allowedLayers: ["points", "heatmap", "streets"],
+      allowedFootprints: [
+        "North Philly",
+        "South Philly",
+        "Haines St",
+        "Richard Allen & PennTown",
+      ],
       allowedAggLayers: ["council", "zip", "police", "hood"],
       fatalOnly: false,
       arrestsOnly: false,
       selectedLayers: ["points"],
+      selectedFootprints: [],
       selectedAggLayers: null,
       selectedRaces: ["W", "B", "H", "Other/Unknown"],
       selectedGenders: ["M", "F"],
@@ -402,6 +448,9 @@ export default {
         this.mapLayersDisabled = true;
         if (this.selectedLayers.length > 0) this.selectedLayers = [];
       } else this.mapLayersDisabled = false;
+    },
+    selectedFootprints(nextValue, prevValue) {
+      this.$emit("update-footprints", nextValue);
     },
     selectedRaces(nextValue, prevValue) {
       this.$emit("update-race", nextValue);

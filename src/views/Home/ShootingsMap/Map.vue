@@ -30,6 +30,8 @@
         :geojson="geojson"
         :options="pointOptions"
       />
+      <l-geo-json :geojson="footprintsGeojson" />
+      <!-- :options="pointOptions" /> -->
     </l-map>
   </div>
 </template>
@@ -82,8 +84,10 @@ export default {
       legendRange: [0.5, 1.0],
       streetsURL:
         "https://services.arcgis.com/fLeGjb7u4uXqeF9q/arcgis/rest/services/Philadelphia_Streets/FeatureServer/0",
+      footprintsGeojson: require("@/data/footprints.json"),
       activeLayers: ["points"],
       aggLayer: null,
+      activeFootprints: [],
       mapOptions: {
         maxZoom: 16,
         minZoom: 11,
@@ -509,6 +513,9 @@ export default {
     },
     setActiveLayers(layers) {
       this.activeLayers = layers;
+    },
+    setActiveFootprints(layers) {
+      this.activeFootprints = layers;
     },
     setAggLayer(layer) {
       this.aggLayer = layer;
