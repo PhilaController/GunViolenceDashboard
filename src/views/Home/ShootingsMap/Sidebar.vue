@@ -339,7 +339,7 @@ export default {
       scrollable: true,
       openPanels: [0],
       onlyClick: false,
-      allowedRaces: ["W", "B", "H", "Other/Unknown"],
+      allowedRaces: ["W", "B", "H", "A", "Other/Unknown"],
       allowedGenders: ["M", "F"],
       allowedTimeRange: [0, 86399999],
       allowedLayers: ["points", "heatmap", "streets"],
@@ -348,7 +348,7 @@ export default {
       arrestsOnly: false,
       selectedLayers: ["points"],
       selectedAggLayers: null,
-      selectedRaces: ["W", "B", "H", "Other/Unknown"],
+      selectedRaces: ["W", "B", "H", "A", "Other/Unknown"],
       selectedGenders: ["M", "F"],
       mapLayersDisabled: false,
       ageRange: [0, 100],
@@ -359,6 +359,7 @@ export default {
           W: "White (Non-Hispanic)",
           B: "Black (Non-Hispanic)",
           H: "Hispanic (Black or White)",
+          A: "Asian",
         },
         gender: {
           M: "Male",
@@ -501,9 +502,8 @@ export default {
       if (filterName == "date") this.dateRange = this.allowedDateRange;
       else if (filterName == "age") this.ageRange = this.allowedAgeRange;
       else if (filterName == "time") this.timeRange = this.allowedTimeRange;
-      else if (filterName == "sex") this.selectedGenders = ["M", "F"];
-      else if (filterName == "race")
-        this.selectedRaces = ["W", "B", "H", "Other/Unknown"];
+      else if (filterName == "sex") this.selectedGenders = this.allowedGenders;
+      else if (filterName == "race") this.selectedRaces = this.allowedRaces;
       else if (filterName == "fatal") this.fatalOnly = false;
       else if (filterName == "has_court_case") this.arrestsOnly = false;
       else throw "This should not happen";
