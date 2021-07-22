@@ -7,6 +7,7 @@ export default {
   data() {
     return {
       height: 300,
+      labelWidth: 250,
       color: "#65aa63",
       chartTitle: "Race/Ethnicity",
       dataKey: (d) => d.properties.race,

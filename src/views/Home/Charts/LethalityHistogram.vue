@@ -6,7 +6,7 @@ export default {
   mixins: [HistogramBase],
   data() {
     return {
-      labelWidth: 100,
+      labelWidth: 125,
       height: 175,
       color: "#49bf9a",
       chartTitle: "Outcome",
