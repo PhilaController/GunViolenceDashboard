@@ -177,9 +177,8 @@ export default {
       ];
     },
     getAllowedDates() {
-      this.maxDate = this.dimensions.date[this.selectedYear].top(
-        1
-      )[0].properties.date;
+      this.maxDate =
+        this.dimensions.date[this.selectedYear].top(1)[0].properties.date;
       return [
         getDayOfYear(
           this.dimensions.date[this.selectedYear].bottom(1)[0].properties.date
