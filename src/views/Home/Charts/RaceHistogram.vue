@@ -11,11 +11,12 @@ export default {
       color: "#65aa63",
       chartTitle: "Race/Ethnicity",
       dataKey: (d) => d.properties.race,
-      categories: ["W", "B", "H", "Other/Unknown"],
+      categories: ["W", "B", "H", "A", "Other/Unknown"],
       aliases: {
         W: "White (Non-Hispanic)",
         B: "Black (Non-Hispanic)",
         H: "Hispanic (Black or White)",
+        A: "Asian",
       },
       shortAliases: {
         W: ["White", "(Non-Hispanic)"],
