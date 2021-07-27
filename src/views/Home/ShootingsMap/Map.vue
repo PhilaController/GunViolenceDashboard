@@ -95,10 +95,8 @@ export default {
           "https://services.arcgis.com/fLeGjb7u4uXqeF9q/arcgis/rest/services/Boundaries_District/FeatureServer/0",
         council:
           "https://services.arcgis.com/fLeGjb7u4uXqeF9q/arcgis/rest/services/Council_Districts_2016/FeatureServer/0/",
-        zip:
-          "https://services.arcgis.com/fLeGjb7u4uXqeF9q/arcgis/rest/services/Philadelphia_ZCTA_2018/FeatureServer/0",
-        hood:
-          "https://services.arcgis.com/fLeGjb7u4uXqeF9q/arcgis/rest/services/Philly_NTAs/FeatureServer/0",
+        zip: "https://services.arcgis.com/fLeGjb7u4uXqeF9q/arcgis/rest/services/Philadelphia_ZCTA_2018/FeatureServer/0",
+        hood: "https://services.arcgis.com/fLeGjb7u4uXqeF9q/arcgis/rest/services/Philly_NTAs/FeatureServer/0",
       },
       zoom: 12,
       center: [39.9854507, -75.15],
@@ -186,6 +184,7 @@ export default {
           H: "Hispanic (Black or White)",
           M: "Male",
           F: "Female",
+          A: "Asian",
         };
         let data = feature.properties;
         let fatal = data.fatal == 1 ? "Fatal" : "Nonfatal";
@@ -260,7 +259,8 @@ export default {
         .addTo(map);
 
       // add a home button to the control bar
-      let button = $(`<a class="leaflet-control-zoom-in" title="Recenter Map" role="button" aria-label="Recenter Map">
+      let button =
+        $(`<a class="leaflet-control-zoom-in" title="Recenter Map" role="button" aria-label="Recenter Map">
         <i class="fa fa-home" aria-hidden="true"></i>
         </a>`);
       button.on("click", this.zoomHome);
@@ -287,8 +287,7 @@ export default {
       // add city limits
       this.layers.cityLimits = esri
         .featureLayer({
-          url:
-            "https://services.arcgis.com/fLeGjb7u4uXqeF9q/arcgis/rest/services/City_Limits/FeatureServer/0",
+          url: "https://services.arcgis.com/fLeGjb7u4uXqeF9q/arcgis/rest/services/City_Limits/FeatureServer/0",
           style: () => {
             return { fill: false, color: "#fff", weight: 4 };
           },
