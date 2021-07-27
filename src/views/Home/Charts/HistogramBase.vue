@@ -22,7 +22,7 @@ export default {
   props: ["data"],
   components: { apexchart: VueApexCharts },
   data() {
-    return { labelWidth: 200 };
+    return { labelWidth: 200, responsiveLabelWidth: 125 };
   },
   methods: {
     getAlias(value) {
@@ -104,8 +104,8 @@ export default {
                   style: { fontSize: "14x" },
                   formatter: (d) => this.getShortAlias(d),
                   trim: false,
-                  minWidth: 100,
-                  maxWidth: 100,
+                  minWidth: this.responsiveLabelWidth,
+                  maxWidth: this.responsiveLabelWidth,
                 },
               },
             },

@@ -8,6 +8,7 @@ export default {
     return {
       height: 300,
       labelWidth: 250,
+      responsiveLabelWidth: 175,
       color: "#65aa63",
       chartTitle: "Race/Ethnicity",
       dataKey: (d) => d.properties.race,
@@ -22,6 +23,7 @@ export default {
         W: ["White", "(Non-Hispanic)"],
         B: ["Black", "(Non-Hispanic)"],
         H: ["Hispanic", "(Black or White)"],
+        A: ["Asian"],
       },
     };
   },
