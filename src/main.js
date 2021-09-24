@@ -44,3 +44,9 @@ getRouter().then(router => {
 })
 
 
+
+// Turn off FA
+$(document).ready(function () {
+  window.FontAwesome.config.observeMutations = false;
+  window.FontAwesome.config.searchPseudoElements = false;
+})

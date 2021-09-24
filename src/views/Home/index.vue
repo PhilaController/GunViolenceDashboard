@@ -1,7 +1,10 @@
 <template>
   <v-app id="inspire">
     <div class="dark-app-theme" style="position: relative">
-      <Loader v-if="isLoading" />
+      <!-- Overlay a lodader -->
+      <v-overlay :value="isLoading" opacity="1" color="#353d42">
+        <v-progress-circular indeterminate size="64" color="#fff" />
+      </v-overlay>
 
       <!-- Header message -->
       <HeaderMessage
@@ -58,10 +61,11 @@ import { getDayOfYear, dateFromDay } from "@/tools.js";
 import ShootingsMap from "./ShootingsMap/Map";
 import ShootingsMapSidebar from "./ShootingsMap/Sidebar";
 import HeaderMessage from "./HeaderMessage";
-import Loader from "./Loader";
 import ChartDashboard from "./ChartDashboard";
 import crossfilter from "crossfilter2";
 import { min, max } from "d3-array";
+
+import { VOverlay, VProgressCircular } from "vuetify/lib";
 
 export default {
   name: "HomePage",
@@ -70,7 +74,8 @@ export default {
     ShootingsMapSidebar,
     HeaderMessage,
     ChartDashboard,
-    Loader,
+    VOverlay,
+    VProgressCircular,
   },
   data() {
     return {

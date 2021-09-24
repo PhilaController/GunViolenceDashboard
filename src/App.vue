@@ -21,6 +21,26 @@
 
       <!-- Year dropdown -->
       <div
+        class="year-message-content"
+        v-if="(dataYears !== null) & ($router.currentRoute.path != '/about')"
+      >
+        <div>Viewing data for</div>
+        <div id="year-select-wrapper">
+          <v-select
+            id="year-select"
+            v-model="selectedYear"
+            :items="dataYears"
+            label=""
+            dark
+            dense
+            hide-details
+            :ripple="false"
+            @change="handleYearSelection"
+          />
+        </div>
+      </div>
+
+      <!-- <div
         v-if="$router.currentRoute.path != '/about'"
         class="year-message-content"
       >
@@ -49,7 +69,7 @@
             >
           </div>
         </div>
-      </div>
+      </div> -->
     </div>
 
     <!-- Content -->
@@ -69,18 +89,12 @@ export default {
       minYear: 2015,
       currentYear: new Date().getFullYear(),
       dataYears: null,
+      selectedYear: null,
     };
   },
   created() {
-    // IMPORTANT: make sure FA does not watch SVG elements
-    if (window.FontAwesome) {
-      window.FontAwesome.config.observeMutations = false;
-      window.FontAwesome.config.searchPseudoElements = false;
-    }
-
     this.fetchDataYears();
   },
-  computed: {},
   methods: {
     fetchDataYears() {
       this.dataYears = this.$store.state.dataYears;
@@ -88,17 +102,22 @@ export default {
       if (!this.dataYears) {
         this.$store.dispatch("fetchDataYears").then((data) => {
           this.dataYears = data;
+          this.selectedYear = this.dataYears[0];
         });
       }
     },
     handleYearSelection(year) {
-      if (year !== this.selectedYear) this.$router.push(`/${year}`);
+      let currentYear = parseInt(this.$router.currentRoute.params.selectedYear);
+      if (year !== currentYear) this.$router.push(`/${year}`);
     },
   },
 };
 </script>
 
 <style>
+#app {
+  margin-top: 100px;
+}
 /* Navbar */
 
 .app-navbar {
@@ -129,6 +148,18 @@ export default {
 }
 
 /* Navbar - dropdown */
+#year-select {
+  background-color: transparent !important;
+  border-width: 0px !important;
+}
+#year-select-wrapper {
+  max-width: 75px !important;
+  margin-left: 0.5rem;
+}
+#year-select-wrapper .v-select__selection {
+  font-size: 1.2rem !important;
+}
+
 .year-dropdown-toggle {
   background-color: #353d42;
   text-decoration: underline;
