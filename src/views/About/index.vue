@@ -35,9 +35,7 @@
           from the Philadelphia Police Department's crime statistics website
         </li>
         <li>
-          <a
-            href="https://ujsportal.pacourts.us/DocketSheets/MC.aspx"
-            target="blank_"
+          <a href="https://ujsportal.pacourts.us/CaseSearch" target="blank_"
             ><i class="fas fa-external-link-alt"></i
             ><span class="ml-2">Information on court cases</span></a
           >
@@ -256,15 +254,15 @@ export default {
 }
 
 .about-page a {
-  color: #7ab5e5;
+  color: #7ab5e5 !important;
 }
 .about-page a:hover {
   text-decoration: underline;
 }
 .fa-external-link-alt {
-  color: #7ab5e5;
+  color: #7ab5e5 !important;
 }
 .fa-external-link-alt:hover {
-  color: #3681bf;
+  color: #3681bf !important;
 }
 </style>

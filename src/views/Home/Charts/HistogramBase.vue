@@ -1,6 +1,9 @@
 <template>
   <div class="histogram-wrapper">
+    <!-- Chart table -->
     <div class="chart-title">{{ chartTitle }}</div>
+
+    <!-- The chart -->
     <apexchart
       class="histogram"
       :height="height"
@@ -9,18 +12,34 @@
       :options="chartOptions"
       v-if="showChart"
     ></apexchart>
+    <!-- Message to show if no data -->
     <div class="no-data-message" v-else>No data</div>
+
+    <!-- Chart table -->
+    <a11yTable
+      v-show="false"
+      aria-hidden="true"
+      :data="groupedData"
+      :categories="categories"
+      :total="total"
+      :aliases="aliases"
+      :caption="`Tabular representation of the chart entitled '${chartTitle}'`"
+    />
   </div>
 </template>
 
 <script>
+// Internal
+import a11yTable from "@/components/a11yTable";
 import { formatNumber } from "@/tools.js";
+
+// External
 import { rollup, sum } from "d3-array";
 import VueApexCharts from "vue-apexcharts";
 
 export default {
   props: ["data"],
-  components: { apexchart: VueApexCharts },
+  components: { apexchart: VueApexCharts, a11yTable },
   data() {
     return { labelWidth: 200, responsiveLabelWidth: 125 };
   },
@@ -45,11 +64,12 @@ export default {
     },
     total() {
       if (this.series) return sum(this.series[0]["data"]);
+      else return null;
     },
     groupedData() {
       if (this.data) {
         return rollup(this.data, (v) => v.length, this.dataKey);
-      }
+      } else return null;
     },
     series() {
       if (this.data) {
@@ -58,7 +78,7 @@ export default {
           data.push(this.groupedData.get(this.categories[i]) || 0);
 
         return [{ data: data, name: "Total" }];
-      }
+      } else return null;
     },
     chartOptions() {
       return {
@@ -70,6 +90,18 @@ export default {
           },
           zoom: {
             enabled: false,
+          },
+        },
+        states: {
+          hover: {
+            filter: {
+              type: "none",
+            },
+          },
+          active: {
+            filter: {
+              type: "none",
+            },
           },
         },
         plotOptions: {

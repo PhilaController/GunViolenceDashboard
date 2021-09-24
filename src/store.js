@@ -1,13 +1,16 @@
 import Vue from 'vue'
 import Vuex from 'vuex'
+
+// D3 variables
 import { json } from "d3-fetch";
 import { timeParse } from "d3-time-format";
+
+// Time formatting
 import { getMsSinceMidnight } from "@/tools.js"
 
 Vue.use(Vuex)
 
 const parseTime = timeParse("%Y/%m/%d %H:%M:%S");
-const HOURS12 = 12 * 60 * 60 * 1000;
 
 export default new Vuex.Store({
   state: {
@@ -22,6 +25,7 @@ export default new Vuex.Store({
   },
   actions: {
     fetchData(store, { year }) {
+      /* Fetch the gun violence data*/
 
       // Pull from Github
       let url = `https://raw.githubusercontent.com/PhiladelphiaController/gun-violence-dashboard-data/master/gun_violence_dashboard_data/data/processed/shootings_${year}.json`
@@ -45,6 +49,7 @@ export default new Vuex.Store({
 
     },
     fetchHomicideData(store) {
+      /* Fetch the homicide totals */
 
       // Pull from Github
       let url = `https://raw.githubusercontent.com/PhiladelphiaController/gun-violence-dashboard-data/master/gun_violence_dashboard_data/data/processed/homicide_totals.json`
@@ -56,6 +61,7 @@ export default new Vuex.Store({
 
     },
     fetchDataYears(store) {
+      /* Fetch the years of gun violence data */
 
       // Pull from Github
       let url = `https://raw.githubusercontent.com/PhiladelphiaController/gun-violence-dashboard-data/master/gun_violence_dashboard_data/data/processed/data_years.json`
@@ -67,6 +73,4 @@ export default new Vuex.Store({
 
     },
   },
-  modules: {
-  }
 })

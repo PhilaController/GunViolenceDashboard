@@ -1,5 +1,5 @@
 <template>
-  <div>
+  <div v-if="filteredData">
     <div class="chart-wrapper">
       <LethalityHistogram :data="filteredData" />
       <ArrestHistogram :data="filteredData" />

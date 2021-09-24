@@ -17,10 +17,11 @@
 </template>
 
 <script>
-import { scaleSequential, scaleLinear } from "d3-scale";
-import { interpolatePlasma } from "d3-scale-chromatic";
+import { scaleLinear } from "d3-scale";
 import { select } from "d3-selection";
+
 export default {
+  name: "Legend",
   props: ["height", "width", "colorScheme", "range"],
   data() {
     return {
@@ -34,7 +35,7 @@ export default {
     },
   },
   watch: {
-    colorScheme(nextValue, prevValue) {
+    colorScheme() {
       // Remove existing
       let svg = select("#hot-spot-canvas");
       svg.selectAll("linearGradient").remove();

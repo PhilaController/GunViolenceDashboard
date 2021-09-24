@@ -1,71 +1,80 @@
 <template>
-  <v-app id="inspire">
-    <div class="dark-app-theme" style="position: relative">
-      <!-- Overlay a lodader -->
-      <v-overlay :value="isLoading" opacity="1" color="#353d42">
-        <v-progress-circular indeterminate size="64" color="#fff" />
-      </v-overlay>
+  <div
+    class="dark-app-theme"
+    style="position: relative"
+    v-show="$router.currentRoute.path != '/about'"
+  >
+    <!-- Overlay a lodader -->
+    <v-overlay :value="isLoading" opacity="1" color="#353d42">
+      <v-progress-circular indeterminate size="64" color="#fff" />
+    </v-overlay>
 
-      <!-- Header message -->
-      <HeaderMessage
-        ref="headerMessage"
-        class="header-message"
-        :fatal="fatalCount"
-        :nonfatal="nonfatalCount"
-        :selectedYear="selectedYear"
-        :currentYear="currentYear"
-        :maxDate="maxDate"
-        :homicideData="homicideData"
+    <!-- Header message -->
+    <HeaderMessage
+      ref="headerMessage"
+      class="header-message"
+      :fatal="fatalCount"
+      :nonfatal="nonfatalCount"
+      :selectedYear="selectedYear"
+      :currentYear="currentYear"
+      :maxDate="maxDate"
+      :homicideData="homicideData"
+    />
+
+    <!-- Shootings map & Sidebar-->
+    <div class="shootings-map-wrapper">
+      <ShootingsMap
+        ref="shootingsMap"
+        class="shootings-map"
+        :geojson="pointsGeoJSON"
+        :aggLayerOpacity="aggLayerOpacity"
       />
-
-      <!-- Shootings map & Sidebar-->
-      <div class="shootings-map-wrapper">
-        <ShootingsMap
-          ref="shootingsMap"
-          class="shootings-map"
-          :geojson="pointsGeoJSON"
-        />
-        <ShootingsMapSidebar
-          ref="mapSidebar"
-          @update-agg-layer="updateAggLayer"
-          @update-layer="updateLayer"
-          @update-date="updateDateFilter"
-          @update-time="updateTimeFilter"
-          @update-fatal="updateFatalFilter"
-          @update-arrests="updateArrestsFilter"
-          @update-race="updateRaceFilter"
-          @update-gender="updateGenderFilter"
-          @update-age="updateAgeFilter"
-          @reset="handleReset"
-          :pointsOnMap="pointsOnMap"
-          :filteredSize="filteredSize"
-          :selectedYear="selectedYear"
-          :allowedAgeRange="allowedAgeRange"
-          :allowedDateRange="allowedDateRange"
-          :currentFilters="currentFilters"
-        />
-      </div>
-
-      <!-- Charts -->
-      <ChartDashboard
-        ref="chartDashboard"
-        :filteredData="filteredData"
-        :key="dashboardKey"
+      <ShootingsMapSidebar
+        ref="mapSidebar"
+        @update-agg-layer="updateAggLayer"
+        @update-layer="updateLayer"
+        @update-date="updateDateFilter"
+        @update-time="updateTimeFilter"
+        @update-fatal="updateFatalFilter"
+        @update-arrests="updateArrestsFilter"
+        @update-race="updateRaceFilter"
+        @update-gender="updateGenderFilter"
+        @update-age="updateAgeFilter"
+        @opacity-change="handleOpacityChange"
+        @reset="handleReset"
+        :pointsOnMap="pointsOnMap"
+        :filteredSize="filteredSize"
+        :selectedYear="selectedYear"
+        :allowedAgeRange="allowedAgeRange"
+        :allowedDateRange="allowedDateRange"
+        :currentFilters="currentFilters"
       />
     </div>
-  </v-app>
+
+    <!-- Charts -->
+    <ChartDashboard
+      ref="chartDashboard"
+      :filteredData="filteredData"
+      :key="dashboardKey"
+    />
+  </div>
 </template>
 
 <script>
+// Local
 import { getDayOfYear, dateFromDay } from "@/tools.js";
+import HeaderMessage from "./HeaderMessage";
+
+// Shootings map
 import ShootingsMap from "./ShootingsMap/Map";
 import ShootingsMapSidebar from "./ShootingsMap/Sidebar";
-import HeaderMessage from "./HeaderMessage";
+
+// Charts
 import ChartDashboard from "./ChartDashboard";
+
+// External
 import crossfilter from "crossfilter2";
 import { min, max } from "d3-array";
-
-import { VOverlay, VProgressCircular } from "vuetify/lib";
 
 export default {
   name: "HomePage",
@@ -74,11 +83,10 @@ export default {
     ShootingsMapSidebar,
     HeaderMessage,
     ChartDashboard,
-    VOverlay,
-    VProgressCircular,
   },
   data() {
     return {
+      aggLayerOpacity: 0.5,
       dashboardKey: 0,
       filteredData: null,
       homicideData: null,
@@ -130,9 +138,8 @@ export default {
     this.$refs.shootingsMap.zoomHome();
   },
   watch: {
-    $route(to, from) {
+    $route(to) {
       this.isLoading = true;
-
       // If not a fresh page, call handleYearSelection
       // Otherwise, it's called in created()
       let year = to.params.selectedYear;
@@ -159,6 +166,9 @@ export default {
     },
   },
   methods: {
+    handleOpacityChange(value) {
+      this.aggLayerOpacity = value;
+    },
     updateLayer(layers) {
       this.$refs.shootingsMap.setActiveLayers(layers);
     },
@@ -191,12 +201,18 @@ export default {
         getDayOfYear(this.maxDate),
       ];
     },
-    updateAgeFilter(value) {
+    updateAgeFilter(value, excludeUnknown) {
       // Increase max by one due to crossfilter top point being exclusive
-      this.currentFilters.age = (d) =>
-        (d != "Unknown") &
-        (parseInt(d) >= value[0]) &
-        (parseInt(d) <= value[1]);
+      if (excludeUnknown) {
+        this.currentFilters.age = (d) =>
+          (d != "Unknown") &
+          (parseInt(d) >= value[0]) &
+          (parseInt(d) <= value[1]);
+      } else {
+        this.currentFilters.age = (d) =>
+          (d == "Unknown") |
+          ((parseInt(d) >= value[0]) & (parseInt(d) <= value[1]));
+      }
       this.applyFilter("age");
     },
     updateGenderFilter(value) {

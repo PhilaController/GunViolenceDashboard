@@ -15,17 +15,12 @@
     <!-- Scrollable content -->
     <div class="sidebar-inner-content">
       <!-- All the panels -->
-      <v-expansion-panels flat accordion multiple dark>
+      <v-expansion-panels accordion multiple dark v-model="expandedPanels">
         <!-- Fatal vs Nonfatal -->
         <v-expansion-panel class="dark-theme">
           <v-expansion-panel-header
             hide-actions
-            style="
-              display: flex;
-              flex-direction: column;
-              justify-content: center;
-              align-items: flex-start;
-            "
+            class="d-flex flex-column justify-content-center align-items-start"
           >
             <v-switch
               v-model="fatalOnly"
@@ -47,7 +42,16 @@
 
         <!-- Map Layers -->
         <v-expansion-panel class="dark-theme">
-          <v-expansion-panel-header>Map Layers</v-expansion-panel-header>
+          <v-expansion-panel-header
+            ><div>Map Layers</div>
+            <div
+              v-if="showReset('mapLayer')"
+              class="reset-link"
+              @click.capture="handleResetClick($event, 'mapLayer')"
+            >
+              Reset
+            </div>
+          </v-expansion-panel-header>
           <v-expansion-panel-content>
             <v-hover v-for="layerName in allowedLayers" :key="layerName">
               <v-checkbox
@@ -58,7 +62,6 @@
                 hide-details
                 multiple
                 :ripple="false"
-                :disabled="mapLayersDisabled"
                 @click.native.capture="handleCheckboxClick"
               >
                 <template v-slot:label>
@@ -90,7 +93,8 @@
             </div>
           </v-expansion-panel-header>
           <v-expansion-panel-content>
-            <v-radio-group v-model="selectedAggLayers">
+            <!-- Layer options -->
+            <v-radio-group v-model="selectedAggLayers" id="aggLayerRadioGroup">
               <v-radio
                 v-for="layerName in allowedAggLayers"
                 :key="layerName"
@@ -100,9 +104,31 @@
                 hide-details
                 :ripple="false"
                 @click.native.capture="handleCheckboxClick"
+                id="aggLayerRadio"
               >
               </v-radio>
             </v-radio-group>
+
+            <!-- Opacity slider -->
+            <div
+              :style="{ opacity: selectedAggLayers !== null ? 1 : 0 }"
+              class="d-flex flex-row align-items-center"
+            >
+              <span class="mr-3" id="opacityLabel">Layer Opacity</span>
+              <vue-slider
+                class="opacity-slider"
+                v-model="aggLayerOpacity"
+                :lazy="true"
+                :tooltip="'none'"
+                :enableCross="false"
+                @drag-end="$emit('opacity-change', aggLayerOpacity / 100)"
+                width="50%"
+                :clickable="false"
+                :max="50"
+                :min="0"
+                aria-labelledby="opacityLabel"
+              />
+            </div>
           </v-expansion-panel-content>
         </v-expansion-panel>
 
@@ -261,6 +287,7 @@
             </div>
           </v-expansion-panel-header>
           <v-expansion-panel-content>
+            <!-- Age slider -->
             <vue-slider
               class="age-slider"
               v-model="ageRange"
@@ -273,7 +300,21 @@
               @drag-end="sendAgeUpdate"
               width="80%"
               :clickable="false"
-            ></vue-slider>
+            />
+
+            <!-- How to handle unknown ages? -->
+            <v-switch
+              class="mt-5 pt-5"
+              v-model="excludeUnknownAges"
+              :label="
+                excludeUnknownAges
+                  ? 'Unknown ages excluded'
+                  : 'Unknown ages included'
+              "
+              :ripple="false"
+              color="#7ab5e5"
+              hide-details
+            ></v-switch>
           </v-expansion-panel-content>
         </v-expansion-panel>
       </v-expansion-panels>
@@ -295,26 +336,13 @@
 </template>
 
 <script>
-import {
-  getDayOfYear,
-  dateFromDay,
-  formatDate,
-  msToTimeString,
-} from "@/tools.js";
-import {
-  VExpansionPanels,
-  VExpansionPanel,
-  VExpansionPanelHeader,
-  VCheckbox,
-  VHover,
-  VSwitch,
-  VRadio,
-  VRadioGroup,
-} from "vuetify/lib";
+import { formatDate, msToTimeString } from "@/tools.js";
+
 import VueSlider from "vue-slider-component";
 import "vue-slider-component/theme/default.css";
 
 export default {
+  components: { VueSlider },
   props: [
     "pointsOnMap",
     "filteredSize",
@@ -323,19 +351,11 @@ export default {
     "allowedDateRange",
     "currentFilters",
   ],
-  components: {
-    VExpansionPanels,
-    VExpansionPanel,
-    VExpansionPanelHeader,
-    VCheckbox,
-    VHover,
-    VueSlider,
-    VSwitch,
-    VRadioGroup,
-    VRadio,
-  },
   data() {
     return {
+      expandedPanels: [1],
+      aggLayerOpacity: 50,
+      excludeUnknownAges: false,
       scrollable: true,
       openPanels: [0],
       onlyClick: false,
@@ -343,14 +363,20 @@ export default {
       allowedGenders: ["M", "F"],
       allowedTimeRange: [0, 86399999],
       allowedLayers: ["points", "heatmap", "streets"],
-      allowedAggLayers: ["council", "zip", "police", "hood"],
+      allowedAggLayers: [
+        "council",
+        "zip",
+        "police",
+        "hood",
+        "house_district",
+        "school",
+      ],
       fatalOnly: false,
       arrestsOnly: false,
       selectedLayers: ["points"],
       selectedAggLayers: null,
       selectedRaces: ["W", "B", "H", "A", "Other/Unknown"],
       selectedGenders: ["M", "F"],
-      mapLayersDisabled: false,
       ageRange: [0, 100],
       dateRange: [1, 366],
       timeRange: [0, 86399999],
@@ -371,55 +397,55 @@ export default {
           streets: "Hot spots by street block",
         },
         aggLayer: {
-          council: "Council District",
-          police: "Police District",
-          zip: "ZIP Code",
-          hood: "Neighborhood",
+          council: "Council Districts",
+          police: "Police Districts",
+          zip: "ZIP Codes",
+          hood: "Neighborhoods",
+          school: "Elementary School Catchments",
+          house_district: "PA House Districts",
         },
       },
     };
   },
 
   watch: {
-    allowedAgeRange(nextValue, prevValue) {
+    allowedAgeRange(nextValue) {
       this.ageRange = nextValue;
     },
-    allowedDateRange(nextValue, prevValue) {
+    allowedDateRange(nextValue) {
       this.dateRange = nextValue;
     },
-    fatalOnly(nextValue, prevValue) {
+    fatalOnly(nextValue) {
       this.$emit("update-fatal", nextValue);
     },
-    arrestsOnly(nextValue, prevValue) {
+    arrestsOnly(nextValue) {
       this.$emit("update-arrests", nextValue);
     },
-    selectedLayers(nextValue, prevValue) {
+    selectedLayers(nextValue) {
       this.$emit("update-layer", nextValue);
     },
-    selectedAggLayers(nextValue, prevValue) {
+    selectedAggLayers(nextValue) {
       this.$emit("update-agg-layer", nextValue);
-
-      if (nextValue !== null) {
-        this.mapLayersDisabled = true;
-        if (this.selectedLayers.length > 0) this.selectedLayers = [];
-      } else this.mapLayersDisabled = false;
     },
-    selectedRaces(nextValue, prevValue) {
+    selectedRaces(nextValue) {
       this.$emit("update-race", nextValue);
     },
-    selectedGenders(nextValue, prevValue) {
+    selectedGenders(nextValue) {
       this.$emit("update-gender", nextValue);
     },
-    minAge(nextValue, prevValue) {
+    minAge() {
       this.sendAgeUpdate();
     },
-    maxAge(nextValue, prevValue) {
+    maxAge() {
+      this.sendAgeUpdate();
+    },
+    excludeUnknownAges() {
       this.sendAgeUpdate();
     },
   },
 
   methods: {
-    resetAllFilters(filterName) {
+    resetAllFilters() {
       let filters = ["race", "age", "date", "sex", "fatal", "has_court_case"];
       for (let i = 0; i < filters.length; i++) {
         this.$emit("reset", filters[i]);
@@ -448,6 +474,7 @@ export default {
         else return false;
       } else if (filterName == "age") {
         if (
+          this.excludeUnknownAges |
           (this.ageRange[0] != this.allowedAgeRange[0]) |
           (this.ageRange[1] != this.allowedAgeRange[1])
         )
@@ -455,6 +482,7 @@ export default {
         else return false;
       } else if (filterName == "aggLayer")
         return this.selectedAggLayers !== null;
+      else if (filterName == "mapLayer") return this.selectedLayers.length > 0;
       else return this.currentFilters[filterName] !== null;
     },
     setDateSlider(value) {
@@ -487,7 +515,9 @@ export default {
       if (filterName == "aggLayer") {
         this.selectedAggLayers = null;
         this.selectedLayers = ["points"];
-        this.mapLayersDisabled = false;
+        return;
+      } else if (filterName == "mapLayer") {
+        this.selectedLayers = [];
         return;
       }
 
@@ -500,8 +530,10 @@ export default {
     resetFilter(filterName) {
       // Update the filters
       if (filterName == "date") this.dateRange = this.allowedDateRange;
-      else if (filterName == "age") this.ageRange = this.allowedAgeRange;
-      else if (filterName == "time") this.timeRange = this.allowedTimeRange;
+      else if (filterName == "age") {
+        this.ageRange = this.allowedAgeRange;
+        this.excludeUnknownAges = false;
+      } else if (filterName == "time") this.timeRange = this.allowedTimeRange;
       else if (filterName == "sex") this.selectedGenders = this.allowedGenders;
       else if (filterName == "race") this.selectedRaces = this.allowedRaces;
       else if (filterName == "fatal") this.fatalOnly = false;
@@ -536,7 +568,7 @@ export default {
       this.$emit("update-time", this.timeRange);
     },
     sendAgeUpdate() {
-      this.$emit("update-age", this.ageRange);
+      this.$emit("update-age", this.ageRange, this.excludeUnknownAges);
     },
     formatNumber(d) {
       return d.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
@@ -579,6 +611,17 @@ export default {
 </script>
 
 <style>
+.v-expansion-panel:before {
+  box-shadow: none !important;
+}
+
+#opacityLabel {
+  color: rgba(255, 255, 255, 0.7);
+}
+.v-input--radio-group {
+  margin-top: 0px !important;
+  padding-top: 0px !important;
+}
 /* Reset all button */
 .reset-all-button:hover {
   color: black !important;

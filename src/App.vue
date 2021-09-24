@@ -1,84 +1,57 @@
 <template>
-  <div class="dark-app-theme" id="app">
-    <!-- Top app navbar -->
-    <div class="app-navbar">
-      <!-- Methods link -->
-      <div v-show="$router.currentRoute.path != '/about'">
-        <router-link
-          to="/about"
-          class="router-link"
-          title="Click for more information"
-          >About<i class="ml-2 fas fa-info-circle fa-lg"></i
-        ></router-link>
-      </div>
-      <div
-        v-show="$router.currentRoute.path == '/about'"
-        class="back-to-app mr-3"
-      >
-        <i class="fas fa-arrow-left mr-1"></i>
-        <router-link to="/" class="router-link">Back</router-link>
-      </div>
-
-      <!-- Year dropdown -->
-      <div
-        class="year-message-content"
-        v-if="(dataYears !== null) & ($router.currentRoute.path != '/about')"
-      >
-        <div>Viewing data for</div>
-        <div id="year-select-wrapper">
-          <v-select
-            id="year-select"
-            v-model="selectedYear"
-            :items="dataYears"
-            label=""
-            dark
-            dense
-            hide-details
-            :ripple="false"
-            @change="handleYearSelection"
-          />
+  <v-app class="dark-app-theme" id="app">
+    <v-main>
+      <!-- Top app navbar -->
+      <div id="my-app-navbar">
+        <!-- Methods link -->
+        <div v-show="$router.currentRoute.path != '/about'">
+          <router-link
+            to="/about"
+            class="router-link"
+            title="Click for more information"
+            >About<i class="ml-2 fas fa-info-circle fa-lg"></i
+          ></router-link>
         </div>
-      </div>
+        <div
+          v-show="$router.currentRoute.path == '/about'"
+          class="back-to-app mr-3"
+        >
+          <i class="fas fa-arrow-left mr-1"></i>
+          <router-link to="/" class="router-link">Back</router-link>
+        </div>
 
-      <!-- <div
-        v-if="$router.currentRoute.path != '/about'"
-        class="year-message-content"
-      >
-        <div>Viewing data for</div>
-        <div class="date-color year-dropdown">
-          <button
-            class="btn date-color dropdown-toggle year-dropdown-toggle"
-            type="button"
-            id="dropdownMenuButton"
-            data-toggle="dropdown"
-            aria-haspopup="true"
-            aria-expanded="false"
-          >
-            {{ $router.currentRoute.params.selectedYear }}
-          </button>
-          <div
-            class="dropdown-menu date-color"
-            aria-labelledby="downMenuButton"
-          >
-            <a
-              v-for="year in dataYears"
-              :key="year"
-              class="dropdown-item"
-              @click="handleYearSelection(year)"
-              >{{ year }}</a
-            >
+        <!-- Year dropdown -->
+        <div
+          class="year-message-content"
+          v-if="(dataYears !== null) & ($router.currentRoute.path != '/about')"
+        >
+          <div>Viewing data for</div>
+          <div id="year-select-wrapper">
+            <v-select
+              id="year-select"
+              v-model="selectedYear"
+              :items="dataYears"
+              label=""
+              dark
+              dense
+              hide-details
+              flat
+              color="#666"
+              :ripple="false"
+              @change="handleYearSelection"
+            />
           </div>
         </div>
-      </div> -->
-    </div>
+      </div>
 
-    <!-- Content -->
-    <transition name="fade" mode="out-in">
-      <keep-alive>
-        <router-view :key="$route.path" />
-      </keep-alive>
-    </transition>
-  </div>
+      <!-- Content -->
+      <transition name="fade" mode="out-in">
+        <keep-alive>
+          <router-view :key="$route.path" />
+        </keep-alive>
+      </transition>
+    </v-main>
+  </v-app>
 </template>
 
 <script>
@@ -93,7 +66,11 @@ export default {
     };
   },
   created() {
+    // Fetch the data years
     this.fetchDataYears();
+
+    // Set the selected year
+    this.selectedYear = parseInt(this.$router.currentRoute.params.selectedYear);
   },
   methods: {
     fetchDataYears() {
@@ -102,11 +79,11 @@ export default {
       if (!this.dataYears) {
         this.$store.dispatch("fetchDataYears").then((data) => {
           this.dataYears = data;
-          this.selectedYear = this.dataYears[0];
         });
       }
     },
     handleYearSelection(year) {
+      // Change the route if the selected year is different
       let currentYear = parseInt(this.$router.currentRoute.params.selectedYear);
       if (year !== currentYear) this.$router.push(`/${year}`);
     },
@@ -120,16 +97,19 @@ export default {
 }
 /* Navbar */
 
-.app-navbar {
+#my-app-navbar {
   width: 100%;
   text-align: right;
   padding: 10px;
   font-size: 1.2rem;
+  color: #b2beb5;
+  background-color: #353d42;
 }
 .year-message-content {
   display: flex;
   align-items: flex-end;
   justify-content: flex-end;
+  color: #fff !important;
 }
 .back-to-app {
   display: flex;
@@ -153,68 +133,28 @@ export default {
   border-width: 0px !important;
 }
 #year-select-wrapper {
-  max-width: 75px !important;
+  width: 77px !important;
   margin-left: 0.5rem;
 }
 #year-select-wrapper .v-select__selection {
   font-size: 1.2rem !important;
+  margin-bottom: 5px !important;
 }
 
-.year-dropdown-toggle {
-  background-color: #353d42;
-  text-decoration: underline;
-  font-weight: bold;
-  padding: 0;
-  margin-left: 2.5px;
-  padding-left: 5px;
-  padding-right: 5px;
-  font-size: inherit;
-}
-.year-dropdown-toggle:hover {
-  color: #b2beb5;
-  border-color: #b2beb5;
-  background-color: #353d42;
-}
-.year-dropdown-toggle:active {
-  color: #b2beb5;
-  border-color: #b2beb5;
-  background-color: #353d42;
-}
-.year-dropdown-toggle:focus {
-  color: #b2beb5;
-  border-color: #b2beb5;
-  background-color: #353d42;
-  box-shadow: none !important;
-}
-.year-dropdown .dropdown-menu {
-  background-color: #353d42;
-  min-width: 0rem;
-  text-align: right;
-  border-color: white;
-  padding-left: 5px;
-  padding-right: 5px;
-}
-.year-dropdown .dropdown-item {
-  color: white !important;
-  font-weight: 500;
-  padding: 0.25rem 1rem !important;
-}
-.year-dropdown .dropdown-item:hover {
-  background-color: #b2beb5 !important;
-}
-.year-dropdown {
-  float: right;
-  margin-left: 0px;
+.v-list-item__title {
+  font-size: 1rem !important;
+  line-height: 1.6rem !important;
+  font-weight: normal !important;
 }
 
 /* App-wide settings */
 .dark-app-theme {
-  font-family: Avenir, Helvetica, Arial, sans-serif;
+  font-family: Avenir, Helvetica, Arial, sans-serif !important;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   text-align: center;
-  color: #fff;
-  background-color: #353d42;
+  color: #fff !important;
+  background-color: #353d42 !important;
 }
 
 #app {

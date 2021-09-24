@@ -17,14 +17,18 @@
       ref="shootingsMap"
       class="map-pane"
     >
-      <loading
-        :active.sync="isLoading"
-        :is-full-page="false"
-        :opacity="0.7"
-        :z-index="99999"
-        color="#fff"
-        background-color="#353d42"
-      ></loading>
+      <!-- Overlay a lodader -->
+      <v-overlay
+        :value="isLoading"
+        absolute
+        opacity="0.6"
+        color="#353d42"
+        :z-index="9999999"
+      >
+        <v-progress-circular indeterminate size="64" color="#fff" />
+      </v-overlay>
+
+      <!-- The geojson -->
       <l-geo-json
         :visible="isActive('points')"
         :geojson="geojson"
@@ -35,24 +39,30 @@
 </template>
 
 <script>
+// Local imports
 import Legend from "./Legend";
 import { msToTimeString } from "@/tools.js";
 
+// Jquery
+import $ from "jquery";
+
+// Leaflet imports
 import L from "leaflet";
 import * as Vue2Leaflet from "vue2-leaflet";
 import "leaflet.heat";
 
-import { min, max, rollup, extent } from "d3-array";
+// d3 imports
+import { min, max, rollup } from "d3-array";
 import { scaleLog, scaleSequential } from "d3-scale";
 import { interpolatePlasma, interpolateReds } from "d3-scale-chromatic";
-import Loading from "vue-loading-overlay";
-import "vue-loading-overlay/dist/vue-loading.css";
 
+// Import esri-leaflet too
 const esri = require("esri-leaflet");
 
+// Define the scale we want to use
 const SCALE = interpolatePlasma;
 
-function styleFunction(feature, i) {
+function styleFunction(feature) {
   let fillColor = feature.properties.fatal ? "#d84545" : "#e5dc8e";
   let edgeColor = feature.properties.fatal ? "#af2828" : "#d3c913";
   return {
@@ -68,13 +78,10 @@ function styleFunction(feature, i) {
 export default {
   components: {
     "l-map": Vue2Leaflet.LMap,
-    "l-tilelayer": Vue2Leaflet.LTileLayer,
-    "l-circle-marker": Vue2Leaflet.LCircleMarker,
     "l-geo-json": Vue2Leaflet.LGeoJson,
     Legend,
-    Loading,
   },
-  props: ["geojson"],
+  props: ["geojson", "aggLayerOpacity"],
   data() {
     return {
       isLoading: false,
@@ -97,6 +104,10 @@ export default {
           "https://services.arcgis.com/fLeGjb7u4uXqeF9q/arcgis/rest/services/Council_Districts_2016/FeatureServer/0/",
         zip: "https://services.arcgis.com/fLeGjb7u4uXqeF9q/arcgis/rest/services/Philadelphia_ZCTA_2018/FeatureServer/0",
         hood: "https://services.arcgis.com/fLeGjb7u4uXqeF9q/arcgis/rest/services/Philly_NTAs/FeatureServer/0",
+        house_district:
+          "https://services.arcgis.com/fLeGjb7u4uXqeF9q/arcgis/rest/services/PA_House_Districts/FeatureServer/0",
+        school:
+          "https://services.arcgis.com/fLeGjb7u4uXqeF9q/arcgis/rest/services/Philadelphia_Elementary_School_Catchments_SY_2019_2020/FeatureServer/0",
       },
       zoom: 12,
       center: [39.9854507, -75.15],
@@ -120,6 +131,7 @@ export default {
     },
     aggExtent() {
       if (this.aggCounts) return [0, max(this.aggCounts, (d) => d[1])];
+      else return null;
     },
     aggCounts() {
       if (this.geojson !== null) {
@@ -128,7 +140,7 @@ export default {
           (v) => v.length,
           (d) => d.properties[this.aggLayer]
         );
-      }
+      } else return null;
     },
     streetCounts() {
       if (this.isActive("streets")) {
@@ -137,10 +149,11 @@ export default {
           (v) => v.length,
           (d) => d.properties.segment_id
         );
-      }
+      } else return null;
     },
     uniqueStreets() {
       if (this.streetCounts) return Array.from(this.streetCounts.keys());
+      else return null;
     },
     mapObject() {
       return this.$refs.shootingsMap.mapObject;
@@ -155,9 +168,11 @@ export default {
     },
     minStreetCount() {
       if (this.streetCounts) return min(this.streetCounts.values());
+      else return null;
     },
     maxStreetCount() {
       if (this.streetCounts) return max(this.streetCounts.values());
+      else return null;
     },
     heatmapData() {
       return this.geojson.map((feature) =>
@@ -295,6 +310,8 @@ export default {
         .addTo(map);
 
       // Create the panes
+      this.panes.aggLayers = map.createPane("aggLayers");
+      this.panes.aggLayers.style.zIndex = 300;
       this.panes.heatmap = map.createPane("heatmap");
       this.panes.heatmap.style.zIndex = 500;
       this.panes.heatmap.style.pointerEvents = "none";
@@ -311,8 +328,12 @@ export default {
     });
   },
   watch: {
+    /* Agg layer opacity */
+    aggLayerOpacity() {
+      this.updateAggLayer();
+    },
     /* Watch length of GeoJSON data */
-    lengthGeojson(nextValue, prevValue) {
+    lengthGeojson() {
       this.updateAggLayer();
     },
     /* Watch the current agg layer */
@@ -332,10 +353,8 @@ export default {
       if (nextValue != null) $("#downloadButton").show();
       else $("#downloadButton").hide();
     },
-    activeLayers(nextValue, prevValue) {
+    activeLayers() {
       let map = this.mapObject;
-
-      let layers = ["heatmap", "streets"];
 
       // Remove heatmap
       if (!this.isActive("heatmap") & map.hasLayer(this.layers.heatmap))
@@ -353,9 +372,11 @@ export default {
       if (this.isActive("streets") & !map.hasLayer(this.layers.streets))
         this.addStreetHotSpots();
     },
-    geojson(nextValue, prevValue) {
+    geojson() {
+      // Add the heatmap
       if (this.isActive("heatmap")) this.addHeatmap();
 
+      // Add the streets hotspots
       if (this.isActive("streets")) this.addStreetHotSpots();
     },
   },
@@ -413,8 +434,6 @@ export default {
       return this.activeLayers.indexOf(layer) !== -1;
     },
     getAggTooltip(feature) {
-      let out = [];
-
       // The name of each geographic region
       let key = this.getAggKey(feature);
       key = feature.properties[key];
@@ -424,7 +443,11 @@ export default {
 
       // Determine the title to show
       let title;
-      if ((this.aggLayer == "council") | (this.aggLayer == "police"))
+      if (
+        (this.aggLayer == "council") |
+        (this.aggLayer == "police") |
+        (this.aggLayer == "house_district")
+      )
         title = `District #${key}`;
       else title = key;
 
@@ -441,7 +464,7 @@ export default {
       return text;
     },
     getStreetTooltip(data) {
-      let out = [];
+      // Get the count for this street
       let count = this.streetCounts.get(`${data.segment_id}`);
 
       let text = `<div class="tooltip-title">${data.block_number} ${data.street_name}</div>
@@ -463,11 +486,13 @@ export default {
       else if (currentZoom > 12) return 3;
       else return 2;
     },
-    getAggKey(feauture) {
+    getAggKey() {
       if (this.aggLayer == "council") return "DISTRICT";
       else if (this.aggLayer == "zip") return "zip_code";
       else if (this.aggLayer == "police") return "DISTRICT_";
       else if (this.aggLayer == "hood") return "neighborhood";
+      else if (this.aggLayer == "school") return "name";
+      else if (this.aggLayer == "house_district") return "district";
     },
     aggStyleFunction(feature) {
       let key = this.getAggKey(feature);
@@ -479,7 +504,7 @@ export default {
         fillColor: color,
         weight: 1,
         opacity: 1,
-        fillOpacity: 0.5,
+        fillOpacity: this.aggLayerOpacity,
       };
     },
     onEachFeatureAgg(feature, layer) {
@@ -532,10 +557,10 @@ export default {
       });
 
       // when done loading, hide the spinner
-      this.layers.streets.on("loading", (event) => {
+      this.layers.streets.on("loading", () => {
         this.isLoading = true;
       });
-      this.layers.streets.on("load", (event) => {
+      this.layers.streets.on("load", () => {
         this.isLoading = false;
       });
 
@@ -544,9 +569,6 @@ export default {
     },
     addAggLayer(name) {
       let map = this.mapObject;
-
-      // Remove main layers
-      this.activeLayers = [];
 
       // Update legend color scale
       this.legendColorScale = interpolateReds;
@@ -557,6 +579,7 @@ export default {
           url: this.aggLayerURLs[name],
           style: this.aggStyleFunction,
           onEachFeature: this.onEachFeatureAgg,
+          pane: "aggLayers",
         });
       }
 

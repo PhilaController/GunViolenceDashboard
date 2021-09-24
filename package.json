@@ -20,10 +20,8 @@
         "esri-leaflet": "^2.5.2",
         "leaflet": "^1.7.1",
         "leaflet.heat": "^0.2.0",
-        "pretty-checkbox": "^3.0.3",
         "vue": "^2.6.11",
         "vue-apexcharts": "^1.6.0",
-        "vue-loading-overlay": "^3.4.2",
         "vue-router": "^3.4.9",
         "vue-slider-component": "^3.2.11",
         "vue2-leaflet": "^2.6.0",
@@ -31,19 +29,36 @@
         "vuex": "^3.6.0"
     },
     "devDependencies": {
-        "@mdi/js": "^5.8.55",
-        "@vue/cli-plugin-babel": "^4.5.9",
-        "@vue/cli-plugin-eslint": "^4.5.9",
-        "@vue/cli-plugin-vuex": "^4.5.9",
-        "@vue/cli-service": "^4.5.9",
+        "@mdi/js": "^6.1.95",
+        "@vue/cli-plugin-babel": "~4.5.0",
+        "@vue/cli-plugin-eslint": "~4.5.0",
+        "@vue/cli-service": "~4.5.0",
         "babel-eslint": "^10.1.0",
-        "deepmerge": "^4.2.2",
         "eslint": "^6.7.2",
         "eslint-plugin-vue": "^6.2.2",
-        "fibers": "^5.0.0",
-        "sass": "^1.32.0",
-        "sass-loader": "^10.1.0",
+        "sass": "~1.32.0",
+        "sass-loader": "^10.0.0",
+        "vue-cli-plugin-vuetify": "~2.4.2",
         "vue-template-compiler": "^2.6.11",
-        "vuetify-loader": "^1.6.0"
-    }
+        "vuetify-loader": "^1.7.0"
+    },
+    "eslintConfig": {
+        "root": true,
+        "env": {
+            "node": true
+        },
+        "extends": [
+            "plugin:vue/essential",
+            "eslint:recommended"
+        ],
+        "parserOptions": {
+            "parser": "babel-eslint"
+        },
+        "rules": {}
+    },
+    "browserslist": [
+        "> 1%",
+        "last 2 versions",
+        "not dead"
+    ]
 }
