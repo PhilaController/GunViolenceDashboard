@@ -30,7 +30,6 @@ export function getMsSinceMidnight(d) {
 
 export function msToTimeString(ms) {
     let x = ms / 1000;
-    let seconds = x % 60;
     x /= 60;
     let minutes = Math.floor(x % 60);
     x /= 60;

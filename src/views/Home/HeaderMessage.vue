@@ -55,6 +55,7 @@ export default {
       if (this.homicideData) {
         return this.getHomicideTotal(this.selectedYear);
       }
+      return null;
     },
     maxHomicideYear() {
       return max(Object.keys(this.homicideData));
@@ -71,11 +72,13 @@ export default {
           return `a ${Math.abs(change).toFixed(0)}% decrease`;
         } else return "no change";
       }
+      return null;
     },
     formattedMaxDate() {
       if (this.maxDate) {
         return this.formatDate(this.maxDate);
       }
+      return null;
     },
   },
   methods: {

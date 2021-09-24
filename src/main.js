@@ -5,7 +5,7 @@ import getRouter from "@/router";
 import vuetify from '@/plugins/vuetify' // path to vuetify export
 import { Icon } from "leaflet";
 import "leaflet/dist/leaflet.css";
-
+import $ from 'jquery'
 
 Vue.config.productionTip = false;
 

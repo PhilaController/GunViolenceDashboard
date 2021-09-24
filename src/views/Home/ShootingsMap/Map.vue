@@ -428,7 +428,7 @@ export default {
       a.click();
     },
     showLegend() {
-      return this.isActive("streets") | (this.activeLayers.length == 0);
+      return this.isActive("streets") | (this.aggLayer !== null);
     },
     isActive(layer) {
       return this.activeLayers.indexOf(layer) !== -1;

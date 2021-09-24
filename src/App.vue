@@ -4,21 +4,29 @@
       <!-- Top app navbar -->
       <div id="my-app-navbar">
         <!-- Methods link -->
-        <div v-show="$router.currentRoute.path != '/about'">
-          <router-link
-            to="/about"
-            class="router-link"
-            title="Click for more information"
-            >About<i class="ml-2 fas fa-info-circle fa-lg"></i
-          ></router-link>
-        </div>
-        <div
+        <v-btn
+          class="back-to-app mr-3 mt-2"
+          v-show="$router.currentRoute.path != '/about'"
+          fab
+          dark
+          small
+          outlined
+          title="Click for more information"
+          @click="$router.push('/about')"
+        >
+          <i class="fas fa-info fa-lg"></i>
+        </v-btn>
+        <v-btn
+          class="back-to-app mr-3 mt-2"
           v-show="$router.currentRoute.path == '/about'"
-          class="back-to-app mr-3"
+          depressed
+          outlined
+          dark
+          @click="$router.push(`/${selectedYear}`)"
         >
           <i class="fas fa-arrow-left mr-1"></i>
-          <router-link to="/" class="router-link">Back</router-link>
-        </div>
+          <span>Back</span>
+        </v-btn>
 
         <!-- Year dropdown -->
         <div
@@ -92,9 +100,6 @@ export default {
 </script>
 
 <style>
-#app {
-  margin-top: 100px;
-}
 /* Navbar */
 
 #my-app-navbar {
@@ -116,6 +121,11 @@ export default {
   flex-direction: row;
   align-items: center;
   justify-content: flex-end;
+}
+
+.back-to-app:hover {
+  background-color: #353d42;
+  border-color: #fff;
 }
 
 /* Router links */

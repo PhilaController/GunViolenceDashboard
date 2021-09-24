@@ -1,3 +1,5 @@
+import $ from "jquery"
+
 // Method #1: Detect IE 10 and IE 11
 function isIE() {
     // IE 10 and IE 11

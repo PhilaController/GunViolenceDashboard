@@ -49,7 +49,7 @@
               class="reset-link"
               @click.capture="handleResetClick($event, 'mapLayer')"
             >
-              Reset
+              Clear
             </div>
           </v-expansion-panel-header>
           <v-expansion-panel-content>
@@ -89,7 +89,7 @@
               class="reset-link"
               @click.capture="handleResetClick($event, 'aggLayer')"
             >
-              Reset
+              Clear
             </div>
           </v-expansion-panel-header>
           <v-expansion-panel-content>
@@ -514,7 +514,6 @@ export default {
 
       if (filterName == "aggLayer") {
         this.selectedAggLayers = null;
-        this.selectedLayers = ["points"];
         return;
       } else if (filterName == "mapLayer") {
         this.selectedLayers = [];
