@@ -38,6 +38,7 @@
         @update-fatal="updateFatalFilter"
         @update-arrests="updateArrestsFilter"
         @update-race="updateRaceFilter"
+        @update-weekday="updateWeekdayFilter"
         @update-gender="updateGenderFilter"
         @update-age="updateAgeFilter"
         @opacity-change="handleOpacityChange"
@@ -62,7 +63,13 @@
 
 <script>
 // Local
-import { getDayOfYear, dateFromDay } from "@/tools.js";
+import {
+  getDayOfYear,
+  dateFromDay,
+  githubFetch,
+  parseTime,
+  getMsSinceMidnight,
+} from "@/tools.js";
 import HeaderMessage from "./HeaderMessage";
 
 // Shootings map
@@ -86,6 +93,7 @@ export default {
   },
   data() {
     return {
+      data: {},
       aggLayerOpacity: 0.5,
       dashboardKey: 0,
       filteredData: null,
@@ -99,6 +107,7 @@ export default {
         age: {},
         sex: {},
         has_court_case: {},
+        weekday: {},
       },
       currentYear: new Date().getFullYear(),
       currentFilters: {
@@ -109,6 +118,7 @@ export default {
         age: null,
         sex: null,
         has_court_case: null,
+        weekday: null,
       },
       allowedAgeRange: [0, 100],
       allowedDateRange: [1, 366],
@@ -118,8 +128,11 @@ export default {
       isLoading: true,
     };
   },
-  created() {
-    this.fetchHomicideData();
+  async created() {
+    // Fetch the annual and YTD homicide counts
+    this.homicideData = await githubFetch("homicide_totals.json");
+
+    // Handle the default year selectiom
     this.handleYearSelection(this.selectedYear);
   },
   activated() {
@@ -223,6 +236,10 @@ export default {
       this.currentFilters.race = (d) => value.indexOf(d) !== -1;
       this.applyFilter("race");
     },
+    updateWeekdayFilter(value) {
+      this.currentFilters.weekday = (d) => value.indexOf(d) !== -1;
+      this.applyFilter("weekday");
+    },
     updateFatalFilter(value) {
       if (value) {
         this.currentFilters.fatal = 1;
@@ -263,7 +280,7 @@ export default {
     handleYearSelection(year) {
       // Fetch data
       if (!this.crossfilters[year]) {
-        this.fetchData(year, this.setDateSliderValue);
+        this.fetchShootingsData(year, this.setDateSliderValue);
       } else {
         // Change full year data
         this.filteredData = this.$store.state[year];
@@ -300,49 +317,46 @@ export default {
 
       return this.crossfilters[year];
     },
-    fetchHomicideData() {
-      this.homicideData = this.$store.state.homicides;
-
-      if (!this.homicideData) {
-        this.$store.dispatch("fetchHomicideData").then((data) => {
-          this.homicideData = data;
-        });
-      }
-    },
-    fetchData(year, callback) {
+    async fetchShootingsData(year, callback) {
       // Get the data for the full year from the data store
-      this.filteredData = this.$store.state[year];
+      this.filteredData = this.data[year];
 
       // Fetch it if we need to
       if (!this.filteredData) {
-        // Download
-        this.$store
-          .dispatch("fetchData", {
-            year: this.selectedYear,
-          })
-          .then((data) => {
-            // Save
-            this.filteredData = data;
-            this.createCrossfilter(data, year);
+        // Download and extract the features
+        const data = await githubFetch(`shootings_${year}.json`);
+        let features = data.features;
 
-            // Clear filters
-            this.$refs.mapSidebar.resetAllFilters();
+        // Format date and time
+        features.forEach(function (d) {
+          d.properties["date"] = parseTime(d.properties["date"]);
+          d.properties["weekday"] = d.properties["date"].getDay();
+          d.properties["time"] = getMsSinceMidnight(d.properties["date"]);
+        });
 
-            // Wait until done updating and then reset
-            this.$nextTick(() => {
-              // Get fatal counts
-              this.setShootingCounts();
+        // Save it
+        this.data[year] = this.filteredData = features;
 
-              // Set the allowed slider ranges
-              this.allowedAgeRange = this.getAllowedAges();
-              this.allowedDateRange = this.getAllowedDates();
+        // Create crossfilter
+        this.createCrossfilter(this.data[year], year);
 
-              // Call callback
-              if (callback) callback();
-            });
+        // Clear filters
+        this.$refs.mapSidebar.resetAllFilters();
 
-            this.isLoading = false;
-          });
+        // Wait until done updating and then reset
+        this.$nextTick(() => {
+          // Get fatal counts
+          this.setShootingCounts();
+
+          // Set the allowed slider ranges
+          this.allowedAgeRange = this.getAllowedAges();
+          this.allowedDateRange = this.getAllowedDates();
+
+          // Call callback
+          if (callback) callback();
+
+          this.isLoading = false;
+        });
       } else this.isLoading = false;
     },
   },

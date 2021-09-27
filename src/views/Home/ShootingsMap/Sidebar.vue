@@ -1,5 +1,8 @@
 <template>
   <div class="shootings-map-sidebar">
+    <!--------------------------------------->
+    <!-- TOP: Side bar header message -->
+    <!--------------------------------------->
     <div class="sidebar-header">
       <div class="data-size-message mt-3">
         Showing locations for
@@ -16,7 +19,9 @@
     <div class="sidebar-inner-content">
       <!-- All the panels -->
       <v-expansion-panels accordion multiple dark v-model="expandedPanels">
-        <!-- Fatal vs Nonfatal -->
+        <!--------------------------------------->
+        <!-- FILTER #1: Fatal vs Nonfatal ------->
+        <!--------------------------------------->
         <v-expansion-panel class="dark-theme">
           <v-expansion-panel-header
             hide-actions
@@ -40,7 +45,9 @@
           </v-expansion-panel-header>
         </v-expansion-panel>
 
-        <!-- Map Layers -->
+        <!--------------------------------------->
+        <!-- FILTER #2: Map Layers -------------->
+        <!--------------------------------------->
         <v-expansion-panel class="dark-theme">
           <v-expansion-panel-header
             ><div>Map Layers</div>
@@ -80,7 +87,9 @@
           </v-expansion-panel-content>
         </v-expansion-panel>
 
-        <!-- Aggregation Layers -->
+        <!--------------------------------------->
+        <!-- FILTER #3: Aggregation Layers ------>
+        <!--------------------------------------->
         <v-expansion-panel class="dark-theme">
           <v-expansion-panel-header
             ><div class="header-content">Aggregation Layers</div>
@@ -132,7 +141,9 @@
           </v-expansion-panel-content>
         </v-expansion-panel>
 
-        <!-- Date Filter -->
+        <!--------------------------------------->
+        <!-- FILTER #4: Date Filter ------------->
+        <!--------------------------------------->
         <v-expansion-panel class="dark-theme">
           <v-expansion-panel-header
             ><div class="header-content">Date</div>
@@ -162,7 +173,9 @@
           </v-expansion-panel-content>
         </v-expansion-panel>
 
-        <!-- Time Filter -->
+        <!--------------------------------------->
+        <!-- FILTER #5: Time -------------------->
+        <!--------------------------------------->
         <v-expansion-panel class="dark-theme">
           <v-expansion-panel-header
             ><div class="header-content">Time</div>
@@ -192,7 +205,77 @@
           </v-expansion-panel-content>
         </v-expansion-panel>
 
-        <!-- Race/Ethnicity -->
+        <!--------------------------------------->
+        <!-- FILTER #6: Day of week ---------->
+        <!--------------------------------------->
+        <v-expansion-panel class="dark-theme">
+          <v-expansion-panel-header
+            ><div class="header-content">Day of Week</div>
+            <div
+              v-if="showReset('weekday')"
+              class="reset-link"
+              @click.capture="handleResetClick($event, 'weekday')"
+            >
+              Reset
+            </div>
+          </v-expansion-panel-header>
+          <v-expansion-panel-content>
+            <v-row>
+              <template
+                v-for="(item, i) in [
+                  { lower: 0, upper: 4 },
+                  { lower: 4, upper: 7 },
+                ]"
+              >
+                <v-col
+                  cols="12"
+                  sm="12"
+                  md="6"
+                  lg="6"
+                  :key="`col-${item.lower}-${item.upper}`"
+                  :class="getMultiColumnClass(i)"
+                >
+                  <v-hover
+                    v-for="weekday in allowedWeekdays.slice(
+                      item.lower,
+                      item.upper
+                    )"
+                    :key="weekday"
+                  >
+                    <v-checkbox
+                      slot-scope="{ hover }"
+                      :value="weekday"
+                      v-model="selectedWeekdays"
+                      color="#7ab5e5"
+                      hide-details
+                      multiple
+                      :ripple="false"
+                      @click.native.capture="handleCheckboxClick"
+                    >
+                      <template v-slot:label>
+                        <div>
+                          {{ getAlias(weekday, "weekday") }}
+                          <span
+                            v-if="hover"
+                            class="only-link"
+                            v-on:click.stop="
+                              handleOnlyClickWeekday($event, weekday)
+                            "
+                            >only</span
+                          >
+                        </div>
+                      </template>
+                    </v-checkbox>
+                  </v-hover>
+                </v-col>
+              </template>
+            </v-row>
+          </v-expansion-panel-content>
+        </v-expansion-panel>
+
+        <!--------------------------------------->
+        <!-- FILTER #7: Race/Ethnicity ---------->
+        <!--------------------------------------->
         <v-expansion-panel class="dark-theme">
           <v-expansion-panel-header
             ><div class="header-content">Race/Ethnicity</div>
@@ -232,7 +315,9 @@
           </v-expansion-panel-content>
         </v-expansion-panel>
 
-        <!-- Gender -->
+        <!--------------------------------------->
+        <!-- FILTER #8: Gender ------------------>
+        <!--------------------------------------->
         <v-expansion-panel class="dark-theme">
           <v-expansion-panel-header
             ><div class="header-content">Gender</div>
@@ -274,7 +359,9 @@
           </v-expansion-panel-content>
         </v-expansion-panel>
 
-        <!-- Age Filter -->
+        <!--------------------------------------->
+        <!-- FILTER #9: Age --------------------->
+        <!--------------------------------------->
         <v-expansion-panel class="dark-theme">
           <v-expansion-panel-header
             ><div class="header-content">Age</div>
@@ -319,6 +406,7 @@
         </v-expansion-panel>
       </v-expansion-panels>
 
+      <!-- Reset all filters -->
       <v-btn
         class="reset-all-button"
         @click="resetAllFilters"
@@ -360,6 +448,7 @@ export default {
       openPanels: [0],
       onlyClick: false,
       allowedRaces: ["W", "B", "H", "A", "Other/Unknown"],
+      allowedWeekdays: [0, 1, 2, 3, 4, 5, 6],
       allowedGenders: ["M", "F"],
       allowedTimeRange: [0, 86399999],
       allowedLayers: ["points", "heatmap", "streets"],
@@ -376,11 +465,21 @@ export default {
       selectedLayers: ["points"],
       selectedAggLayers: null,
       selectedRaces: ["W", "B", "H", "A", "Other/Unknown"],
+      selectedWeekdays: [0, 1, 2, 3, 4, 5, 6],
       selectedGenders: ["M", "F"],
       ageRange: [0, 100],
       dateRange: [1, 366],
       timeRange: [0, 86399999],
       aliases: {
+        weekday: {
+          0: "Sunday",
+          1: "Monday",
+          2: "Tuesday",
+          3: "Wednesday",
+          4: "Thursday",
+          5: "Friday",
+          6: "Saturday",
+        },
         race: {
           W: "White (Non-Hispanic)",
           B: "Black (Non-Hispanic)",
@@ -430,6 +529,9 @@ export default {
     selectedRaces(nextValue) {
       this.$emit("update-race", nextValue);
     },
+    selectedWeekdays(nextValue) {
+      this.$emit("update-weekday", nextValue);
+    },
     selectedGenders(nextValue) {
       this.$emit("update-gender", nextValue);
     },
@@ -445,8 +547,22 @@ export default {
   },
 
   methods: {
+    getMultiColumnClass(i) {
+      if (this.$vuetify.breakpoint.smAndDown) {
+        return i == 0 ? "mb-0 pb-0" : "mt-0 pt-0";
+      }
+      return "";
+    },
     resetAllFilters() {
-      let filters = ["race", "age", "date", "sex", "fatal", "has_court_case"];
+      let filters = [
+        "race",
+        "age",
+        "date",
+        "sex",
+        "fatal",
+        "has_court_case",
+        "weekday",
+      ];
       for (let i = 0; i < filters.length; i++) {
         this.$emit("reset", filters[i]);
         this.resetFilter(filters[i]);
@@ -456,6 +572,12 @@ export default {
       if (filterName == "race") {
         for (let i = 0; i < this.allowedRaces.length; i++) {
           if (this.selectedRaces.indexOf(this.allowedRaces[i]) == -1)
+            return true;
+        }
+        return false;
+      } else if (filterName == "weekday") {
+        for (let i = 0; i < this.allowedWeekdays.length; i++) {
+          if (this.selectedWeekdays.indexOf(this.allowedWeekdays[i]) == -1)
             return true;
         }
         return false;
@@ -535,6 +657,8 @@ export default {
       } else if (filterName == "time") this.timeRange = this.allowedTimeRange;
       else if (filterName == "sex") this.selectedGenders = this.allowedGenders;
       else if (filterName == "race") this.selectedRaces = this.allowedRaces;
+      else if (filterName == "weekday")
+        this.selectedWeekdays = this.allowedWeekdays;
       else if (filterName == "fatal") this.fatalOnly = false;
       else if (filterName == "has_court_case") this.arrestsOnly = false;
       else throw "This should not happen";
@@ -542,6 +666,10 @@ export default {
     handleOnlyClickRace(event, value) {
       this.onlyClick = true;
       this.selectedRaces = [value];
+    },
+    handleOnlyClickWeekday(event, value) {
+      this.onlyClick = true;
+      this.selectedWeekdays = [value];
     },
     handleOnlyClickLayer(event, value) {
       this.onlyClick = true;
@@ -576,6 +704,7 @@ export default {
   computed: {
     showResetAllButton() {
       if (this.showReset("race")) return false;
+      if (this.showReset("weekday")) return false;
       if (this.showReset("age")) return false;
       if (this.showReset("date")) return false;
       if (this.showReset("sex")) return false;
