@@ -63,6 +63,8 @@
 </template>
 
 <script>
+import { githubFetch } from "@/tools";
+
 export default {
   name: "App",
   data() {
@@ -73,23 +75,14 @@ export default {
       selectedYear: null,
     };
   },
-  created() {
+  async created() {
     // Fetch the data years
-    this.fetchDataYears();
+    this.dataYears = await githubFetch("data_years.json");
 
     // Set the selected year
     this.selectedYear = parseInt(this.$router.currentRoute.params.selectedYear);
   },
   methods: {
-    fetchDataYears() {
-      this.dataYears = this.$store.state.dataYears;
-
-      if (!this.dataYears) {
-        this.$store.dispatch("fetchDataYears").then((data) => {
-          this.dataYears = data;
-        });
-      }
-    },
     handleYearSelection(year) {
       // Change the route if the selected year is different
       let currentYear = parseInt(this.$router.currentRoute.params.selectedYear);

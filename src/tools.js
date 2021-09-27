@@ -1,14 +1,31 @@
-export function dateFromDay(year, day) {
+import { timeParse } from "d3-time-format";
+
+async function githubFetch(filename) {
+
+    let url = "https://raw.githubusercontent.com/PhiladelphiaController/gun-violence-dashboard-data/master/gun_violence_dashboard_data/data/processed/"
+    try {
+        const response = await fetch(url + filename);
+        let data = await response.json();
+        return data
+    } catch (e) {
+        console.error(e);
+    }
+}
+
+function dateFromDay(year, day) {
+    /* Returns a date object from a year and day of the year. */
     let date = new Date(year, 0); // initialize a date in `year-01-01`
     return new Date(date.setDate(day)); // add the number of days
 }
 
-export function formatDate(year, day) {
+function formatDate(year, day) {
+    /* Returns a string of the form `YYYY-MM-DD` from a year and day of the year. */
     let dt = dateFromDay(year, day);
     return dt.toLocaleString("default", { month: "short", day: "numeric" });
 }
 
-export function getDayOfYear(dt) {
+function getDayOfYear(dt) {
+    /* Get the day of the year from a Date object */
     let start = new Date(dt.getFullYear(), 0, 0);
     let diff =
         dt -
@@ -19,16 +36,19 @@ export function getDayOfYear(dt) {
 }
 
 
-export function formatNumber(d) {
+function formatNumber(d) {
+    /* Format a number with comma separator. */
     return d.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
 }
 
-export function getMsSinceMidnight(d) {
+function getMsSinceMidnight(d) {
+    /* Get the number of milliseconds since midnight */
     var e = new Date(d);
     return d - e.setHours(0, 0, 0, 0);
 }
 
-export function msToTimeString(ms) {
+function msToTimeString(ms) {
+    /* Convert milliseconds to a string of the form `HH:MM:SS.mmm` */
     let x = ms / 1000;
     x /= 60;
     let minutes = Math.floor(x % 60);
@@ -41,3 +61,15 @@ export function msToTimeString(ms) {
     var strTime = hours + ':' + minutes + ' ' + ampm;
     return strTime;
 }
+const parseTime = timeParse("%Y/%m/%d %H:%M:%S");
+
+export {
+    dateFromDay,
+    formatDate,
+    getDayOfYear,
+    formatNumber,
+    getMsSinceMidnight,
+    msToTimeString,
+    githubFetch,
+    parseTime
+};

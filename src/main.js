@@ -1,12 +1,17 @@
+// External
 import Vue from 'vue'
-import App from '@/App'
-import store from '@/store'
-import getRouter from "@/router";
-import vuetify from '@/plugins/vuetify' // path to vuetify export
-import { Icon } from "leaflet";
-import "leaflet/dist/leaflet.css";
 import $ from 'jquery'
 
+// App and router
+import App from '@/App'
+import { getRouter } from "@/plugins/router";
+import vuetify from '@/plugins/vuetify' // path to vuetify export
+
+// Leaflet
+import { Icon } from "leaflet";
+import "leaflet/dist/leaflet.css";
+
+// Don't show tip
 Vue.config.productionTip = false;
 
 // Fix leaflet icons
@@ -36,7 +41,6 @@ $(".back-link").after(helpMessage);
 
 getRouter().then(router => {
   new Vue({
-    store,
     router,
     vuetify,
     render: h => h(App)
