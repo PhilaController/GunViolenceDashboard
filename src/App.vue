@@ -1,61 +1,65 @@
 <template>
-  <v-app class="dark-app-theme" id="app">
-    <v-main>
-      <!-- Top app navbar -->
-      <div id="my-app-navbar">
-        <!-- Methods link -->
-        <v-btn
-          class="back-to-app mr-3 mt-2"
-          v-show="$router.currentRoute.path != '/about'"
-          fab
-          dark
-          small
-          outlined
-          title="Click for more information"
-          @click="$router.push('/about')"
-        >
-          <i class="fas fa-info fa-lg"></i>
-        </v-btn>
-        <v-btn
-          class="back-to-app mr-3 mt-2"
-          v-show="$router.currentRoute.path == '/about'"
-          depressed
-          outlined
-          dark
-          @click="$router.push(`/${selectedYear}`)"
-        >
-          <i class="fas fa-arrow-left mr-1"></i>
-          <span>Back</span>
-        </v-btn>
+  <div data-vuetify>
+    <v-app class="dark-app-theme" id="app">
+      <v-main>
+        <!-- Top app navbar -->
+        <div id="my-app-navbar">
+          <!-- Methods link -->
+          <v-btn
+            class="back-to-app mr-3 mt-2"
+            v-show="$router.currentRoute.path != '/about'"
+            fab
+            dark
+            small
+            outlined
+            title="Click for more information"
+            @click="$router.push('/about')"
+          >
+            <i class="fas fa-info fa-lg"></i>
+          </v-btn>
+          <v-btn
+            class="back-to-app mr-3 mt-2"
+            v-show="$router.currentRoute.path == '/about'"
+            depressed
+            outlined
+            dark
+            @click="$router.push(`/${selectedYear}`)"
+          >
+            <i class="fas fa-arrow-left mr-1"></i>
+            <span>Back</span>
+          </v-btn>
 
-        <!-- Year dropdown -->
-        <div
-          class="year-message-content"
-          v-if="(dataYears !== null) & ($router.currentRoute.path != '/about')"
-        >
-          <div>Viewing data for</div>
-          <div id="year-select-wrapper">
-            <v-select
-              id="year-select"
-              v-model="selectedYear"
-              :items="dataYears"
-              label=""
-              dark
-              dense
-              hide-details
-              flat
-              color="#666"
-              :ripple="false"
-              @change="handleYearSelection"
-            />
+          <!-- Year dropdown -->
+          <div
+            class="year-message-content"
+            v-if="
+              (dataYears !== null) & ($router.currentRoute.path != '/about')
+            "
+          >
+            <div>Viewing data for</div>
+            <div id="year-select-wrapper">
+              <v-select
+                id="year-select"
+                v-model="selectedYear"
+                :items="dataYears"
+                label=""
+                dark
+                dense
+                hide-details
+                flat
+                color="#666"
+                :ripple="false"
+                @change="handleYearSelection"
+              />
+            </div>
           </div>
         </div>
-      </div>
 
-      <!-- Content -->
-      <router-view :key="$route.path" />
-    </v-main>
-  </v-app>
+        <!-- Content -->
+        <router-view :key="$route.path" />
+      </v-main>
+    </v-app>
+  </div>
 </template>
 
 <script>
@@ -96,7 +100,7 @@ export default {
 #my-app-navbar {
   width: 100%;
   text-align: right;
-  padding: 10px;
+  padding-right: 10px;
   font-size: 1.2rem;
   color: #b2beb5;
   background-color: #353d42;

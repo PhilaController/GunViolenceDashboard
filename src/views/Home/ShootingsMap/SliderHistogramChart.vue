@@ -19,7 +19,7 @@
 import VueApexCharts from "vue-apexcharts";
 
 export default {
-  props: ["data", "height", "width", "lower", "upper"],
+  props: ["data", "height", "width", "lower", "upper", "xmin", "xmax"],
   components: { apexchart: VueApexCharts },
   computed: {
     series() {
@@ -31,7 +31,7 @@ export default {
     },
     chartOptions() {
       return {
-        xaxis: { type: "numeric" },
+        xaxis: { type: "numeric", min: this.xmin, max: this.xmax },
         annotations: {
           xaxis: [
             {

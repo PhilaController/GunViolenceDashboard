@@ -161,8 +161,10 @@
               v-if="histograms['date']"
               :width="getHistogramWidth()"
               :data="histograms['date']"
-              :lower="getLowerAgeMs()"
-              :upper="getUpperAgeMs()"
+              :lower="getAgeMs(dateRange[0] - 1)"
+              :upper="getAgeMs(dateRange[1] + 1)"
+              :xmin="getAgeMs(allowedDateRange[0])"
+              :xmax="getAgeMs(allowedDateRange[1])"
             />
 
             <vue-slider
@@ -204,6 +206,8 @@
               :data="histograms['time']"
               :lower="timeRange[0]"
               :upper="timeRange[1]"
+              :xmin="allowedTimeRange[0]"
+              :xmax="allowedTimeRange[1]"
             />
 
             <vue-slider
@@ -400,7 +404,9 @@
               :width="getHistogramWidth()"
               :data="histograms['age']"
               :lower="ageRange[0]"
-              :upper="ageRange[1]"
+              :upper="ageRange[1] + 1"
+              :xmin="allowedAgeRange[0]"
+              :xmax="allowedAgeRange[1] + 1"
             />
 
             <!-- Age slider -->
@@ -578,11 +584,8 @@ export default {
   },
 
   methods: {
-    getUpperAgeMs() {
-      return +dateFromDay(this.selectedYear, this.dateRange[1] + 1);
-    },
-    getLowerAgeMs() {
-      return +dateFromDay(this.selectedYear, this.dateRange[0] - 1);
+    getAgeMs(value) {
+      return +dateFromDay(this.selectedYear, value);
     },
     getHistogramWidth() {
       return ($(".sidebar-inner-content").width() - 48) * 0.85;
