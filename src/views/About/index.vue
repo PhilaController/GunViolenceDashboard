@@ -182,6 +182,7 @@
 import { blob } from "d3-fetch";
 
 export default {
+  props: ["dataYears"],
   data() {
     return {
       minYear: 2015,
@@ -189,11 +190,6 @@ export default {
       courtsDataUrl:
         "https://raw.githubusercontent.com/PhiladelphiaController/gun-violence-dashboard-data/master/gun_violence_dashboard_data/data/raw/scraped_courts_data.json",
     };
-  },
-  computed: {
-    dataYears() {
-      return this.$store.state.dataYears;
-    },
   },
   mounted() {
     if (window.FontAwesome) window.FontAwesome.dom.i2svg();

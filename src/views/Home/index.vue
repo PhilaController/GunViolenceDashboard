@@ -49,6 +49,7 @@
         :allowedAgeRange="allowedAgeRange"
         :allowedDateRange="allowedDateRange"
         :currentFilters="currentFilters"
+        :histograms="histograms"
       />
     </div>
 
@@ -81,7 +82,7 @@ import ChartDashboard from "./ChartDashboard";
 
 // External
 import crossfilter from "crossfilter2";
-import { min, max } from "d3-array";
+import { min, max, bin, rollup } from "d3-array";
 
 export default {
   name: "HomePage",
@@ -94,6 +95,7 @@ export default {
   data() {
     return {
       data: {},
+      histograms: {},
       aggLayerOpacity: 0.5,
       dashboardKey: 0,
       filteredData: null,
@@ -158,6 +160,31 @@ export default {
       let year = to.params.selectedYear;
       if (this.crossfilters[year]) this.handleYearSelection(year);
     },
+    filteredData(newData) {
+      if (newData) {
+        // Get the cross filter for this year
+        let cross = this.crossfilters[this.selectedYear];
+
+        let dims = ["age", "date", "time"];
+        for (let i = 0; i < dims.length; i++) {
+          let dim = dims[i];
+
+          // Get the filtered data, ignoring this dimensiom
+          let values = cross.allFiltered([
+            this.dimensions[dim][this.selectedYear],
+          ]);
+
+          // Calculate historgram
+          this.histograms[dim] = this.getHistogram(dim)(values);
+        }
+
+        this.histograms["weekday"] = rollup(
+          cross.allFiltered([this.dimensions["weekday"][this.selectedYear]]),
+          (v) => v.length,
+          (d) => d.properties.weekday
+        );
+      }
+    },
   },
   computed: {
     selectedYear() {
@@ -179,6 +206,11 @@ export default {
     },
   },
   methods: {
+    getHistogram(dimension) {
+      return bin()
+        .thresholds(50)
+        .value((d) => +d.properties[dimension]);
+    },
     handleOpacityChange(value) {
       this.aggLayerOpacity = value;
     },
@@ -274,35 +306,36 @@ export default {
       // Set filtered data
       this.filteredData = this.crossfilters[this.selectedYear].allFiltered();
     },
-    setDateSliderValue() {
-      this.$refs.mapSidebar.setDateSlider(this.getAllowedDates());
-    },
-    handleYearSelection(year) {
-      // Fetch data
+    async handleYearSelection(year) {
+      // The data for this year
+      let data = this.data[year];
+
+      // Fetch the data if we need to
       if (!this.crossfilters[year]) {
-        this.fetchShootingsData(year, this.setDateSliderValue);
-      } else {
-        // Change full year data
-        this.filteredData = this.$store.state[year];
-
-        // Clear filters
-        this.$refs.mapSidebar.resetAllFilters();
-
-        // Wait until done updating
-        this.$nextTick(() => {
-          // Get fatal counts
-          this.setShootingCounts();
-
-          this.allowedAgeRange = this.getAllowedAges();
-          this.allowedDateRange = this.getAllowedDates();
-
-          // call callback
-          this.setDateSliderValue();
-
-          // turn off loading
-          this.isLoading = false;
-        });
+        data = await this.fetchShootingsData(year);
       }
+
+      // Change full year data
+      this.filteredData = data;
+
+      // Clear filters
+      this.$refs.mapSidebar.resetAllFilters();
+
+      // Wait until done updating
+      this.$nextTick(() => {
+        // Get fatal counts
+        this.setShootingCounts();
+
+        // Set the allowed date and age range
+        this.allowedAgeRange = this.getAllowedAges();
+        this.allowedDateRange = this.getAllowedDates();
+
+        // Update the date slider
+        this.$refs.mapSidebar.setDateSlider(this.allowedDateRange);
+
+        // turn off loading
+        this.isLoading = false;
+      });
     },
     createCrossfilter(data, year) {
       // Create and save crossfilter
@@ -317,7 +350,7 @@ export default {
 
       return this.crossfilters[year];
     },
-    async fetchShootingsData(year, callback) {
+    async fetchShootingsData(year) {
       // Get the data for the full year from the data store
       this.filteredData = this.data[year];
 
@@ -335,29 +368,15 @@ export default {
         });
 
         // Save it
-        this.data[year] = this.filteredData = features;
+        this.data[year] = features;
 
         // Create crossfilter
         this.createCrossfilter(this.data[year], year);
+      }
 
-        // Clear filters
-        this.$refs.mapSidebar.resetAllFilters();
-
-        // Wait until done updating and then reset
-        this.$nextTick(() => {
-          // Get fatal counts
-          this.setShootingCounts();
-
-          // Set the allowed slider ranges
-          this.allowedAgeRange = this.getAllowedAges();
-          this.allowedDateRange = this.getAllowedDates();
-
-          // Call callback
-          if (callback) callback();
-
-          this.isLoading = false;
-        });
-      } else this.isLoading = false;
+      // Turn of loading and return
+      this.isLoading = false;
+      return this.data[year];
     },
   },
 };

@@ -53,11 +53,7 @@
       </div>
 
       <!-- Content -->
-      <transition name="fade" mode="out-in">
-        <keep-alive>
-          <router-view :key="$route.path" />
-        </keep-alive>
-      </transition>
+      <router-view :key="$route.path" />
     </v-main>
   </v-app>
 </template>
@@ -80,7 +76,9 @@ export default {
     this.dataYears = await githubFetch("data_years.json");
 
     // Set the selected year
-    this.selectedYear = parseInt(this.$router.currentRoute.params.selectedYear);
+    let selectedYear = this.$router.currentRoute.params.selectedYear;
+    if (!selectedYear) selectedYear = this.dataYears[0];
+    this.selectedYear = parseInt(selectedYear);
   },
   methods: {
     handleYearSelection(year) {

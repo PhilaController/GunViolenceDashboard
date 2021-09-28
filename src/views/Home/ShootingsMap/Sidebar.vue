@@ -156,6 +156,15 @@
             </div>
           </v-expansion-panel-header>
           <v-expansion-panel-content>
+            <HistogramChart
+              height="100"
+              v-if="histograms['date']"
+              :width="getHistogramWidth()"
+              :data="histograms['date']"
+              :lower="getLowerAgeMs()"
+              :upper="getUpperAgeMs()"
+            />
+
             <vue-slider
               class="date-slider"
               v-model="dateRange"
@@ -188,6 +197,15 @@
             </div>
           </v-expansion-panel-header>
           <v-expansion-panel-content>
+            <TooltipChart
+              height="100"
+              v-if="histograms['time']"
+              :width="getHistogramWidth()"
+              :data="histograms['time']"
+              :lower="timeRange[0]"
+              :upper="timeRange[1]"
+            />
+
             <vue-slider
               class="time-slider"
               v-model="timeRange"
@@ -374,6 +392,17 @@
             </div>
           </v-expansion-panel-header>
           <v-expansion-panel-content>
+            <!-- Test -->
+
+            <HistogramChart
+              height="100"
+              v-if="histograms['age']"
+              :width="getHistogramWidth()"
+              :data="histograms['age']"
+              :lower="ageRange[0]"
+              :upper="ageRange[1]"
+            />
+
             <!-- Age slider -->
             <vue-slider
               class="age-slider"
@@ -393,11 +422,7 @@
             <v-switch
               class="mt-5 pt-5"
               v-model="excludeUnknownAges"
-              :label="
-                excludeUnknownAges
-                  ? 'Unknown ages excluded'
-                  : 'Unknown ages included'
-              "
+              label="Exclude unknown ages"
               :ripple="false"
               color="#7ab5e5"
               hide-details
@@ -424,13 +449,19 @@
 </template>
 
 <script>
-import { formatDate, msToTimeString } from "@/tools.js";
+// Internal
+import { formatDate, msToTimeString, dateFromDay } from "@/tools.js";
+import HistogramChart from "./HistogramChart";
 
+// Vue slider
 import VueSlider from "vue-slider-component";
 import "vue-slider-component/theme/default.css";
 
+// External
+import $ from "jquery";
+
 export default {
-  components: { VueSlider },
+  components: { VueSlider, HistogramChart },
   props: [
     "pointsOnMap",
     "filteredSize",
@@ -438,6 +469,7 @@ export default {
     "allowedAgeRange",
     "allowedDateRange",
     "currentFilters",
+    "histograms",
   ],
   data() {
     return {
@@ -506,7 +538,6 @@ export default {
       },
     };
   },
-
   watch: {
     allowedAgeRange(nextValue) {
       this.ageRange = nextValue;
@@ -547,6 +578,15 @@ export default {
   },
 
   methods: {
+    getUpperAgeMs() {
+      return +dateFromDay(this.selectedYear, this.dateRange[1] + 1);
+    },
+    getLowerAgeMs() {
+      return +dateFromDay(this.selectedYear, this.dateRange[0] - 1);
+    },
+    getHistogramWidth() {
+      return ($(".sidebar-inner-content").width() - 48) * 0.85;
+    },
     getMultiColumnClass(i) {
       if (this.$vuetify.breakpoint.smAndDown) {
         return i == 0 ? "mb-0 pb-0" : "mt-0 pt-0";
@@ -558,6 +598,7 @@ export default {
         "race",
         "age",
         "date",
+        "time",
         "sex",
         "fatal",
         "has_court_case",
@@ -707,6 +748,7 @@ export default {
       if (this.showReset("weekday")) return false;
       if (this.showReset("age")) return false;
       if (this.showReset("date")) return false;
+      if (this.showReset("time")) return false;
       if (this.showReset("sex")) return false;
       if (this.fatalOnly) return false;
       if (this.arrestsOnly) return false;

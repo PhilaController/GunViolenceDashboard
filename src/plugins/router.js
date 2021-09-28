@@ -16,7 +16,8 @@ async function getRouter() {
         routes: [
             {
                 path: "/about",
-                component: AboutPage
+                component: AboutPage,
+                props: { dataYears: data }
             },
             {
                 path: "/",

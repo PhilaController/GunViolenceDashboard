@@ -83,9 +83,11 @@ export default {
   },
   methods: {
     getHomicideTotal(year) {
-      if (this.selectedYear == this.maxHomicideYear)
-        return this.homicideData[year].ytd;
-      else return this.homicideData[year].annual;
+      if (this.selectedYear !== undefined) {
+        if (this.selectedYear == this.maxHomicideYear)
+          return this.homicideData[year].ytd;
+        else return this.homicideData[year].annual;
+      } else return null;
     },
     formatNumber(d) {
       return d.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
