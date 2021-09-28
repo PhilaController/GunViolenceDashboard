@@ -156,7 +156,7 @@
             </div>
           </v-expansion-panel-header>
           <v-expansion-panel-content>
-            <HistogramChart
+            <SliderHistogramChart
               height="100"
               v-if="histograms['date']"
               :width="getHistogramWidth()"
@@ -394,7 +394,7 @@
           <v-expansion-panel-content>
             <!-- Test -->
 
-            <HistogramChart
+            <SliderHistogramChart
               height="100"
               v-if="histograms['age']"
               :width="getHistogramWidth()"
@@ -451,7 +451,7 @@
 <script>
 // Internal
 import { formatDate, msToTimeString, dateFromDay } from "@/tools.js";
-import HistogramChart from "./HistogramChart";
+import SliderHistogramChart from "./SliderHistogramChart";
 
 // Vue slider
 import VueSlider from "vue-slider-component";
@@ -461,7 +461,7 @@ import "vue-slider-component/theme/default.css";
 import $ from "jquery";
 
 export default {
-  components: { VueSlider, HistogramChart },
+  components: { VueSlider, SliderHistogramChart },
   props: [
     "pointsOnMap",
     "filteredSize",
