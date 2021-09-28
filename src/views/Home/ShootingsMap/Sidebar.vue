@@ -197,7 +197,7 @@
             </div>
           </v-expansion-panel-header>
           <v-expansion-panel-content>
-            <TooltipChart
+            <SliderHistogramChart
               height="100"
               v-if="histograms['time']"
               :width="getHistogramWidth()"
