@@ -832,7 +832,7 @@ export default {
 .shootings-map-sidebar {
   width: 30%;
   min-width: 300px;
-  height: 600px;
+  height: 800px;
   display: flex;
   flex-direction: column;
 }

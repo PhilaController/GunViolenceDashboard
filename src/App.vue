@@ -166,4 +166,10 @@ export default {
   padding-top: 5px;
   padding-bottom: 100px;
 }
+
+h2,
+h3 {
+  margin-top: 0 !important;
+  margin-bottom: 1rem !important;
+}
 </style>

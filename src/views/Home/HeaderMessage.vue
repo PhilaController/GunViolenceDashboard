@@ -5,7 +5,7 @@
       <div class="header-message">
         Mapping Philadelphia's Gun Violence Crisis
       </div>
-      <div class="header-submessage">
+      <div class="header-submessage text-center">
         <template>
           <span v-if="currentYear == selectedYear">To date</span
           ><span v-else>In total</span>, there
@@ -18,7 +18,7 @@
       </div>
 
       <!-- Submessage -->
-      <div class="header-submessage">
+      <div class="header-submessage text-center">
         This app maps the victims of gun violence:
         <span class="nonfatal">{{ formatNumber(nonfatal) }} nonfatal</span> and
         <span class="fatal">{{ formatNumber(fatal) }} fatal</span>

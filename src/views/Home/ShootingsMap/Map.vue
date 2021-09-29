@@ -573,7 +573,7 @@ export default {
 }
 .map-pane {
   flex: 1;
-  height: 600px !important;
+  height: 800px !important;
   z-index: 1 !important;
 }
 

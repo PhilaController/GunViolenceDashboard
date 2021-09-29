@@ -51,7 +51,7 @@
         <v-select
           id="aggregate-select"
           :items="aggLayerItems"
-          label="Aggregate By"
+          label="Aggregate By (Optional)"
           clearable
           v-model="selectedAgg"
         ></v-select>

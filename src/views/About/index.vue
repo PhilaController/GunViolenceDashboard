@@ -2,7 +2,7 @@
   <div class="container about-page">
     <!-- Data Sources -->
     <div class="data-section">
-      <h3>Data</h3>
+      <h2>Data</h2>
 
       <!-- Disclaimer -->
       <p>
@@ -14,7 +14,6 @@
       </p>
 
       <!-- List original data sources -->
-      <h5 class="mt-4">Data Sources</h5>
       <ul>
         <li>
           <a
@@ -42,50 +41,11 @@
           from the web portal for the Unified Judicial System of Pennsylvania
         </li>
       </ul>
-
-      <!-- List original data sources -->
-      <h5 class="mt-4">Data Downloads</h5>
-
-      <div>
-        <ul>
-          <li class="shooting-victims-download">
-            <span class="mr-3">Shooting Victims Data:</span>
-            <div v-for="year in dataYears" :key="year">
-              <a
-                :href="getShootingDataUrl"
-                @click.prevent="
-                  downloadItem({
-                    url: getShootingDataUrl(year),
-                    label: `shootings_${year}.geojson`,
-                  })
-                "
-                ><i class="fas fa-download mr-2"></i>{{ year }}
-              </a>
-            </div>
-          </li>
-
-          <li class="shooting-victims-download">
-            <span class="mr-3"
-              >Court Cases Associated with Shooting Incidents:</span
-            >
-            <a
-              :href="courtsDataUrl"
-              @click.prevent="
-                downloadItem({
-                  url: courtsDataUrl,
-                  label: `pa_ujs_data_by_incident.json`,
-                })
-              "
-              ><i class="fas fa-download mr-2"></i>All Years</a
-            >
-          </li>
-        </ul>
-      </div>
     </div>
 
     <!-- Methods -->
     <div class="methods-section">
-      <h3 class="mt-5">Methods</h3>
+      <h2 class="mt-5">Methods</h2>
       <p>
         The data for shooting victims in this application is automatically
         updated daily. As noted on Open Data Philly's
@@ -159,7 +119,7 @@
 
     <!-- Feedback -->
     <div class="feedback-section">
-      <h3 class="mt-5">Application Feedback</h3>
+      <h2 class="mt-5">Application Feedback</h2>
       <p>
         If you've noticed a bug in this application or have suggestions for how
         to make it better, please send an email to

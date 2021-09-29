@@ -11,15 +11,15 @@ function trimHeaders(arr, headers) {
 
 function jsonToGeoJson(data, headers) {
     //   Trim keys
-    data = data.map((o) => {
-        let out = {};
-        out.geometry = o.geometry;
-        out.properties = trimHeaders(o.properties, headers);
-        return out;
+    let features = data.map((o, i) => {
+        return {
+            type: "Feature", id: i, geometry: o.geometry,
+            properties: trimHeaders(o.properties, headers)
+        }
     });
 
     // The content
-    let collection = { type: "FeatureCollection", features: data };
+    let collection = { type: "FeatureCollection", features: features };
     return JSON.stringify(collection);
 }
 
