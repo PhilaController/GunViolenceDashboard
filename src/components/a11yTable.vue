@@ -8,6 +8,7 @@
     <!-- Header -->
     <thead>
       <tr>
+        <th scope="col"></th>
         <th scope="col">Total Shooting Victims (Percentage)</th>
       </tr>
     </thead>
