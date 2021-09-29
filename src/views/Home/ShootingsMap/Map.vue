@@ -81,7 +81,7 @@ export default {
     "l-geo-json": Vue2Leaflet.LGeoJson,
     Legend,
   },
-  props: ["geojson", "aggLayerOpacity"],
+  props: ["geojson", "aggLayerOpacity", "aggLayerURLs"],
   data() {
     return {
       isLoading: false,
@@ -96,18 +96,6 @@ export default {
         minZoom: 11,
         zoomControl: false,
         scrollWheelZoom: false,
-      },
-      aggLayerURLs: {
-        police:
-          "https://services.arcgis.com/fLeGjb7u4uXqeF9q/arcgis/rest/services/Boundaries_District/FeatureServer/0",
-        council:
-          "https://services.arcgis.com/fLeGjb7u4uXqeF9q/arcgis/rest/services/Council_Districts_2016/FeatureServer/0/",
-        zip: "https://services.arcgis.com/fLeGjb7u4uXqeF9q/arcgis/rest/services/Philadelphia_ZCTA_2018/FeatureServer/0",
-        hood: "https://services.arcgis.com/fLeGjb7u4uXqeF9q/arcgis/rest/services/Philly_NTAs/FeatureServer/0",
-        house_district:
-          "https://services.arcgis.com/fLeGjb7u4uXqeF9q/arcgis/rest/services/PA_House_Districts/FeatureServer/0",
-        school:
-          "https://services.arcgis.com/fLeGjb7u4uXqeF9q/arcgis/rest/services/Philadelphia_Elementary_School_Catchments_SY_2019_2020/FeatureServer/0",
       },
       zoom: 12,
       center: [39.9854507, -75.15],
@@ -281,14 +269,6 @@ export default {
       button.on("click", this.zoomHome);
       $("#shootingsMapContainer .leaflet-control-zoom").append(button);
 
-      // add data download
-      let button2 = $(`<a class="leaflet-control-zoom-in" id="downloadButton"
-                       title="Download data" role="button" aria-label="Download data" style="display: none;">
-        <i class="fa fa-download" aria-hidden="true"></i>
-        </a>`);
-      button2.on("click", this.getAggLayerGeoJSON);
-      $("#shootingsMapContainer .leaflet-control-zoom").append(button2);
-
       // convert to svg
       if (window.FontAwesome) window.FontAwesome.dom.i2svg();
 
@@ -348,10 +328,6 @@ export default {
         this.addAggLayer(nextValue);
         this.updateAggLayer();
       }
-
-      // Show/hide download button
-      if (nextValue != null) $("#downloadButton").show();
-      else $("#downloadButton").hide();
     },
     activeLayers() {
       let map = this.mapObject;
@@ -398,35 +374,7 @@ export default {
         });
       }
     },
-    getAggLayerGeoJSON() {
-      let layer = this.layers[this.aggLayer];
-      let collection = { type: "FeatureCollection", features: [] };
 
-      layer.eachFeature((layer) => {
-        let feature = layer.toGeoJSON();
-        let key = this.getAggKey(feature);
-        key = feature.properties[key];
-
-        // Get the total count
-        let count = this.aggCounts.get(key) || 0;
-
-        // Set the properties and save
-        feature.properties = { name: key, shooting_victims: count };
-        collection.features.push(feature);
-      });
-
-      // Download as geojson
-      let content = JSON.stringify(collection);
-      let fileName = `shooting-victims-by-${this.aggLayer}.json`;
-      let contentType = "text/json";
-
-      // Download it
-      const a = document.createElement("a");
-      const file = new Blob([content], { type: contentType });
-      a.href = URL.createObjectURL(file);
-      a.download = fileName;
-      a.click();
-    },
     showLegend() {
       return this.isActive("streets") | (this.aggLayer !== null);
     },
@@ -435,7 +383,7 @@ export default {
     },
     getAggTooltip(feature) {
       // The name of each geographic region
-      let key = this.getAggKey(feature);
+      let key = this.getAggKey(this.aggLayer);
       key = feature.properties[key];
 
       // Get the total count
@@ -486,16 +434,16 @@ export default {
       else if (currentZoom > 12) return 3;
       else return 2;
     },
-    getAggKey() {
-      if (this.aggLayer == "council") return "DISTRICT";
-      else if (this.aggLayer == "zip") return "zip_code";
-      else if (this.aggLayer == "police") return "DISTRICT_";
-      else if (this.aggLayer == "hood") return "neighborhood";
-      else if (this.aggLayer == "school") return "name";
-      else if (this.aggLayer == "house_district") return "district";
+    getAggKey(aggLayer) {
+      if (aggLayer == "council") return "DISTRICT";
+      else if (aggLayer == "zip") return "zip_code";
+      else if (aggLayer == "police") return "DISTRICT_";
+      else if (aggLayer == "hood") return "neighborhood";
+      else if (aggLayer == "school") return "name";
+      else if (aggLayer == "house_district") return "district";
     },
     aggStyleFunction(feature) {
-      let key = this.getAggKey(feature);
+      let key = this.getAggKey(this.aggLayer);
       key = feature.properties[key];
 
       let color = this.aggColorScale(this.aggCounts.get(key) || 0);

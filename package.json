@@ -20,6 +20,7 @@
         "esri-leaflet": "^2.5.2",
         "leaflet": "^1.7.1",
         "leaflet.heat": "^0.2.0",
+        "papaparse": "^5.3.1",
         "vue": "^2.6.11",
         "vue-apexcharts": "^1.6.0",
         "vue-router": "^3.4.9",
@@ -35,12 +36,12 @@
         "babel-eslint": "^10.1.0",
         "eslint": "^6.7.2",
         "eslint-plugin-vue": "^6.2.2",
+        "postcss-prefix-selector": "^1.10.0",
         "sass": "~1.32.0",
         "sass-loader": "^10.0.0",
         "vue-cli-plugin-vuetify": "~2.4.2",
         "vue-template-compiler": "^2.6.11",
-        "vuetify-loader": "^1.7.0",
-        "postcss-prefix-selector": "^1.10.0"
+        "vuetify-loader": "^1.7.0"
     },
     "eslintConfig": {
         "root": true,

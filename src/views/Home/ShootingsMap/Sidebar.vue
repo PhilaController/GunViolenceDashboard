@@ -15,6 +15,35 @@
       </div>
     </div>
 
+    <div
+      id="buttons-section"
+      class="d-flex justify-content-center flex-column align-items-center mt-5"
+    >
+      <!-- Download data -->
+      <DownloadButton
+        :data="data[selectedYear]"
+        :filteredData="filteredData"
+        :aggLayers="aliases['aggLayer']"
+        :selectedYear="selectedYear"
+        @download-agg="handleAggDownload"
+      />
+
+      <!-- Reset all filters -->
+      <v-btn
+        id="reset-all-button"
+        class="ml-5 mr-5 mt-3 mb-5"
+        @click="resetAllFilters"
+        outlined
+        color="white"
+        :disabled="showResetAllButton"
+        dark
+        :ripple="false"
+      >
+        <i class="fas fa-undo"></i
+        ><span class="ml-3">Reset All Filters</span></v-btn
+      >
+    </div>
+
     <!-- Scrollable content -->
     <div class="sidebar-inner-content">
       <!-- All the panels -->
@@ -28,12 +57,13 @@
             class="d-flex flex-column justify-content-center align-items-start"
           >
             <v-switch
+              class="mt-0"
               v-model="fatalOnly"
               label="Fatal shootings only"
               :ripple="false"
               color="#7ab5e5"
               hide-details
-            ></v-switch>
+            />
 
             <v-switch
               v-model="arrestsOnly"
@@ -41,7 +71,7 @@
               :ripple="false"
               color="#7ab5e5"
               hide-details
-            ></v-switch>
+            />
           </v-expansion-panel-header>
         </v-expansion-panel>
 
@@ -436,20 +466,6 @@
           </v-expansion-panel-content>
         </v-expansion-panel>
       </v-expansion-panels>
-
-      <!-- Reset all filters -->
-      <v-btn
-        class="reset-all-button"
-        @click="resetAllFilters"
-        outlined
-        color="white"
-        :disabled="showResetAllButton"
-        dark
-        :ripple="false"
-      >
-        <i class="fas fa-undo"></i
-        ><span class="ml-3">Reset All Filters</span></v-btn
-      >
     </div>
   </div>
 </template>
@@ -458,6 +474,7 @@
 // Internal
 import { formatDate, msToTimeString, dateFromDay } from "@/tools.js";
 import SliderHistogramChart from "./SliderHistogramChart";
+import DownloadButton from "./DownloadButton";
 
 // Vue slider
 import VueSlider from "vue-slider-component";
@@ -467,7 +484,7 @@ import "vue-slider-component/theme/default.css";
 import $ from "jquery";
 
 export default {
-  components: { VueSlider, SliderHistogramChart },
+  components: { VueSlider, SliderHistogramChart, DownloadButton },
   props: [
     "pointsOnMap",
     "filteredSize",
@@ -476,6 +493,9 @@ export default {
     "allowedDateRange",
     "currentFilters",
     "histograms",
+    "data",
+    "filteredData",
+    "aggLayerURLs",
   ],
   data() {
     return {
@@ -584,6 +604,9 @@ export default {
   },
 
   methods: {
+    handleAggDownload(selectedAgg, formatRadio, data) {
+      this.$emit("download-agg", selectedAgg, formatRadio, data);
+    },
     getAgeMs(value) {
       return +dateFromDay(this.selectedYear, value);
     },
@@ -746,6 +769,9 @@ export default {
     },
   },
   computed: {
+    aggLayers() {
+      return Object.keys(this.aggLayerURLs);
+    },
     showResetAllButton() {
       if (this.showReset("race")) return false;
       if (this.showReset("weekday")) return false;
@@ -784,7 +810,7 @@ export default {
 </script>
 
 <style>
-.v-expansion-panel:before {
+.sidebar-inner-content .v-expansion-panel:before {
   box-shadow: none !important;
 }
 
@@ -796,12 +822,10 @@ export default {
   padding-top: 0px !important;
 }
 /* Reset all button */
-.reset-all-button:hover {
-  color: black !important;
-  border-color: white;
-}
-.reset-all-button {
-  margin-bottom: 30px;
+#reset-all-button,
+#download-data-button {
+  width: 100%;
+  max-width: 300px;
 }
 
 /* Total sidebar */
@@ -827,7 +851,6 @@ export default {
 .sidebar-header {
   text-align: center;
   padding: 5px;
-  border-bottom: 3px solid #cfcfcf;
 }
 
 .data-size-message {
@@ -841,7 +864,7 @@ export default {
 }
 
 /* Panel config */
-button:focus {
+.sidebar-inner-content button:focus {
   outline: 0 !important;
   background-color: #353d42 !important;
   border-color: #353d42 !important;
@@ -849,11 +872,11 @@ button:focus {
   -webkit-tap-highlight-color: #fff !important;
 }
 
-.v-expansion-panel-header {
+.sidebar-inner-content .v-expansion-panel-header {
   font-size: 1.1rem !important;
   display: flex;
 }
-.v-expansion-panel-header:hover {
+.sidebar-inner-content .v-expansion-panel-header:hover {
   background-color: #353d42 !important;
   border-color: #353d42 !important;
   color: #fff;
@@ -909,11 +932,15 @@ button:focus {
   background-color: #7ab5e5;
 }
 
-.v-expansion-panel:last-of-type {
+.sidebar-inner-content .v-expansion-panel:last-of-type {
   padding-bottom: 30px;
 }
 
 .hide {
   opacity: 0;
+}
+
+#buttons-section {
+  border-bottom: 3px solid #cfcfcf;
 }
 </style>

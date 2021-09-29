@@ -11,7 +11,7 @@
           ><span v-else>In total</span>, there
           <span v-if="currentYear == selectedYear">have been</span
           ><span v-else>were</span>
-          <span class="fatal"> {{ homicideTotal }} homicides</span><br />
+          <span class="fatal"> {{ homicideTotal }} homicides</span>
           in <span class="date-color">{{ selectedYear }}</span
           >, {{ homicideChange }} from {{ selectedYear - 1 }}.
         </template>
@@ -19,7 +19,7 @@
 
       <!-- Submessage -->
       <div class="header-submessage">
-        This app maps the victims of gun violence:<br />
+        This app maps the victims of gun violence:
         <span class="nonfatal">{{ formatNumber(nonfatal) }} nonfatal</span> and
         <span class="fatal">{{ formatNumber(fatal) }} fatal</span>
         shooting victims

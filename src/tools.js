@@ -1,6 +1,72 @@
 import { timeParse } from "d3-time-format";
+import * as Papa from "papaparse"
+
+function trimHeaders(arr, headers) {
+
+    return headers.reduce((acc, curr) => {
+        acc[curr] = arr[curr];
+        return acc;
+    }, {});
+}
+
+function jsonToGeoJson(data, headers) {
+    //   Trim keys
+    data = data.map((o) => {
+        let out = {};
+        out.geometry = o.geometry;
+        out.properties = trimHeaders(o.properties, headers);
+        return out;
+    });
+
+    // The content
+    let collection = { type: "FeatureCollection", features: data };
+    return JSON.stringify(collection);
+}
+
+function jsonToCSV(data, headers) {
+
+    return Papa.unparse(
+        //   Add lat/lng
+        data.map((d) => {
+            // Properties and geometry
+            let out = d.properties;
+            let geo = d.geometry;
+
+            //   Get the lat/lng
+            if (geo) {
+                out["lng"] = geo.coordinates[0];
+                out["lat"] = geo.coordinates[1];
+            } else {
+                out["lng"] = null;
+                out["lat"] = null;
+            }
+
+            // Trim to the right columns
+            return trimHeaders(out, headers);
+        })
+    );
+}
+
+function downloadFile(content, contentType, fileName) {
+
+    // Create the link
+    const a = document.createElement("a");
+
+    // Create object to download
+    const file = new Blob([content], { type: contentType });
+    a.href = URL.createObjectURL(file);
+
+    // Set the file name
+    a.download = fileName;
+
+    // Trigger download
+    a.click();
+
+}
+
 
 async function githubFetch(filename) {
+    /* Fetch data from Github */
 
     let url = "https://raw.githubusercontent.com/PhiladelphiaController/gun-violence-dashboard-data/master/gun_violence_dashboard_data/data/processed/"
     try {
@@ -71,5 +137,8 @@ export {
     getMsSinceMidnight,
     msToTimeString,
     githubFetch,
-    parseTime
+    parseTime,
+    downloadFile,
+    jsonToCSV,
+    jsonToGeoJson
 };

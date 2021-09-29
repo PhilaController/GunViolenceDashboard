@@ -28,6 +28,7 @@
         class="shootings-map"
         :geojson="pointsGeoJSON"
         :aggLayerOpacity="aggLayerOpacity"
+        :aggLayerURLs="aggLayerURLs"
       />
       <ShootingsMapSidebar
         ref="mapSidebar"
@@ -42,7 +43,10 @@
         @update-gender="updateGenderFilter"
         @update-age="updateAgeFilter"
         @opacity-change="handleOpacityChange"
+        @download-agg="handleAggDownload"
         @reset="handleReset"
+        :data="data"
+        :filteredData="filteredData"
         :pointsOnMap="pointsOnMap"
         :filteredSize="filteredSize"
         :selectedYear="selectedYear"
@@ -50,6 +54,7 @@
         :allowedDateRange="allowedDateRange"
         :currentFilters="currentFilters"
         :histograms="histograms"
+        :aggLayerURLs="aggLayerURLs"
       />
     </div>
 
@@ -70,6 +75,7 @@ import {
   githubFetch,
   parseTime,
   getMsSinceMidnight,
+  downloadFile,
 } from "@/tools.js";
 import HeaderMessage from "./HeaderMessage";
 
@@ -83,6 +89,10 @@ import ChartDashboard from "./ChartDashboard";
 // External
 import crossfilter from "crossfilter2";
 import { min, max, bin, rollup } from "d3-array";
+import * as Papa from "papaparse";
+
+// Import esri-leaflet too
+const esri = require("esri-leaflet");
 
 export default {
   name: "HomePage",
@@ -94,6 +104,18 @@ export default {
   },
   data() {
     return {
+      aggLayerURLs: {
+        police:
+          "https://services.arcgis.com/fLeGjb7u4uXqeF9q/arcgis/rest/services/Boundaries_District/FeatureServer/0",
+        council:
+          "https://services.arcgis.com/fLeGjb7u4uXqeF9q/arcgis/rest/services/Council_Districts_2016/FeatureServer/0/",
+        zip: "https://services.arcgis.com/fLeGjb7u4uXqeF9q/arcgis/rest/services/Philadelphia_ZCTA_2018/FeatureServer/0",
+        hood: "https://services.arcgis.com/fLeGjb7u4uXqeF9q/arcgis/rest/services/Philly_NTAs/FeatureServer/0",
+        house_district:
+          "https://services.arcgis.com/fLeGjb7u4uXqeF9q/arcgis/rest/services/PA_House_Districts/FeatureServer/0",
+        school:
+          "https://services.arcgis.com/fLeGjb7u4uXqeF9q/arcgis/rest/services/Philadelphia_Elementary_School_Catchments_SY_2019_2020/FeatureServer/0",
+      },
       data: {},
       histograms: {},
       aggLayerOpacity: 0.5,
@@ -206,6 +228,78 @@ export default {
     },
   },
   methods: {
+    handleAggDownload(selectedAgg, formatRadio, data) {
+      // Aggregate by the key
+      let aggCounts = rollup(
+        data,
+        (v) => v.length,
+        (d) => d.properties[selectedAgg]
+      );
+
+      // CSV
+      let content, fileName, contentType;
+      if (formatRadio == 0) {
+        // Convert to an array of objects
+        aggCounts = Array.from(aggCounts, ([name, shooting_victims]) => {
+          let out = {};
+          out[selectedAgg] = name;
+          out["shooting_victims"] = shooting_victims;
+          return out;
+        }).filter((d) => d[selectedAgg]);
+
+        // Get the content
+        content = Papa.unparse(aggCounts);
+
+        // File and content
+        fileName = `shooting-victims-data-by-${selectedAgg}.csv`;
+        contentType = "text/plain";
+
+        // Download it
+        downloadFile(content, contentType, fileName);
+      } else {
+        // Download the agg layer
+        let layer = esri.featureLayer({
+          url: this.aggLayerURLs[selectedAgg],
+        });
+
+        let map = this.$refs.shootingsMap;
+
+        // Query for the features
+        layer
+          .query()
+          .where("1 = 1")
+          .run(function (error, featureCollection) {
+            // The name key
+            let key = map.getAggKey(selectedAgg);
+
+            // The empty collection
+            let collection = { type: "FeatureCollection", features: [] };
+
+            // Loop over all features
+            featureCollection.features.map((feature) => {
+              // Get the name and count
+              let name = feature.properties[key];
+              let count = aggCounts.get(name) || 0;
+
+              // Create the properties
+              feature.properties = {};
+              feature.properties[selectedAgg] = name;
+              feature.properties["shooting_victims"] = count;
+
+              // Add to our collectiom
+              collection.features.push(feature);
+            });
+
+            // Download as geojson
+            content = JSON.stringify(collection);
+            fileName = `shooting-victims-by-${selectedAgg}.geojson`;
+            contentType = "text/json";
+
+            // Download it
+            downloadFile(content, contentType, fileName);
+          });
+      }
+    },
     getHistogram(dimension) {
       return bin()
         .thresholds(50)

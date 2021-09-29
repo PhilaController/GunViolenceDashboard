@@ -157,7 +157,7 @@ export default {
   font-family: Avenir, Helvetica, Arial, sans-serif !important;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  text-align: center;
+
   color: #fff !important;
   background-color: #353d42 !important;
 }
