@@ -598,6 +598,7 @@ export default {
 }
 .tooltip-line td {
   padding: 0 7px 0 7px;
+  text-align: center;
 }
 .tooltip-line-header {
   font-weight: bold;
