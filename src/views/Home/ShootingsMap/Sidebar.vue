@@ -768,7 +768,7 @@ export default {
   margin-bottom: 0.5rem;
 }
 #filters-section {
-  margin-top: 20px;
+  margin-top: 0px;
 }
 #map-layers-section {
   padding: 16px 24px;

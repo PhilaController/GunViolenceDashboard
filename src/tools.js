@@ -1,5 +1,6 @@
 import { timeParse } from "d3-time-format";
 import * as Papa from "papaparse"
+import { ALIASES } from "@/data-dict"
 
 function toItemsArray(obj) {
 
@@ -23,13 +24,26 @@ function jsonToGeoJson(data, headers) {
     let features = data.map((o, i) => {
         return {
             type: "Feature", id: i, geometry: o.geometry,
-            properties: trimHeaders(o.properties, headers)
+            properties: replaceAliases(trimHeaders(o.properties, headers))
         }
     });
 
     // The content
     let collection = { type: "FeatureCollection", features: features };
     return JSON.stringify(collection);
+}
+
+function replaceAliases(d) {
+
+    for (let key in d) {
+        let aliases = ALIASES[key];
+        if (aliases) {
+            d[key] = aliases[d[key]] || d[key];
+        }
+    }
+    return d;
+
+
 }
 
 function jsonToCSV(data, headers) {
@@ -51,7 +65,7 @@ function jsonToCSV(data, headers) {
             }
 
             // Trim to the right columns
-            return trimHeaders(out, headers);
+            return replaceAliases(trimHeaders(out, headers));
         })
     );
 }

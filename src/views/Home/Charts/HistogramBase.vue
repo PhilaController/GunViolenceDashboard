@@ -1,7 +1,10 @@
 <template>
   <div class="histogram-wrapper">
     <!-- Chart table -->
-    <div class="chart-title">{{ chartTitle }}</div>
+    <div class="chart-title-wrapper">
+      <div class="chart-title">{{ chartTitle }}</div>
+      <v-divider class="my-divider" />
+    </div>
 
     <!-- The chart -->
     <apexchart
@@ -189,7 +192,10 @@ export default {
 
 <style>
 .apexcharts-text apexcharts-yaxis-label {
-  baseline: central !important;
+  dominant-baseline: central !important;
+}
+.apexcharts-yaxis-texts-g text {
+  dominant-baseline: central !important;
 }
 .apexcharts-grid line:nth-last-child(2) {
   stroke: #353d42 !important;
@@ -220,21 +226,25 @@ export default {
 .histogram text {
   fill: #fff;
 }
+.chart-title-wrapper {
+  padding-left: 75px;
+}
 
 .chart-title {
   font-size: 1.5rem;
   font-weight: 500;
   line-height: 1.1;
   color: inherit;
-  padding-left: 100px;
   margin-bottom: 1rem;
   text-align: center;
   font-family: Montserrat, sans-serif;
 }
 @media only screen and (max-width: 767px) {
   .chart-title {
-    padding-left: 0px;
     margin-top: 10px;
+  }
+  .chart-title-wrapper {
+    padding-left: 0px;
   }
 }
 </style>
