@@ -1,39 +1,37 @@
 <template>
-  <div class="header-wrapper">
-    <div class="header-message-wrapper">
-      <!-- Title -->
-      <div class="header-message">
-        Mapping Philadelphia's Gun Violence Crisis
-      </div>
-      <div class="header-submessage text-center">
-        <template>
-          <span v-if="currentYear == selectedYear">To date</span
-          ><span v-else>In total</span>, there
-          <span v-if="currentYear == selectedYear">have been</span
-          ><span v-else>were</span>
-          <span class="fatal"> {{ homicideTotal }} homicides</span>
-          in <span class="date-color">{{ selectedYear }}</span
-          >, {{ homicideChange }} from {{ selectedYear - 1 }}.
-        </template>
-      </div>
+  <div class="header-message-wrapper w-100">
+    <!-- Title -->
+    <div class="header-message pl-2 pr-2">
+      Mapping Philadelphia's Gun Violence Crisis
+    </div>
+    <div class="header-submessage pl-5 pr-5">
+      <template>
+        <span v-if="currentYear == selectedYear">To date</span
+        ><span v-else>In total</span>, there
+        <span v-if="currentYear == selectedYear">have been</span
+        ><span v-else>were</span>
+        <span class="fatal"> {{ homicideTotal }} homicides</span>
+        in <span class="date-color">{{ selectedYear }}</span
+        >, {{ homicideChange }} from {{ selectedYear - 1 }}.
+      </template>
+    </div>
 
-      <!-- Submessage -->
-      <div class="header-submessage text-center">
-        This app maps the victims of gun violence:
-        <span class="nonfatal">{{ formatNumber(nonfatal) }} nonfatal</span> and
-        <span class="fatal">{{ formatNumber(fatal) }} fatal</span>
-        shooting victims
-        <template v-if="selectedYear == currentYear">
-          as of
-          <span class="date-color"
-            >{{ formattedMaxDate }}, {{ selectedYear }}
-          </span>
-        </template>
-        <template v-else>
-          in
-          <span class="date-color">{{ selectedYear }} </span>
-        </template>
-      </div>
+    <!-- Submessage -->
+    <div class="header-submessage pl-5 pr-5">
+      This app maps the victims of gun violence:
+      <span class="nonfatal">{{ formatNumber(nonfatal) }} nonfatal</span> and
+      <span class="fatal">{{ formatNumber(fatal) }} fatal</span>
+      shooting victims
+      <template v-if="selectedYear == currentYear">
+        as of
+        <span class="date-color"
+          >{{ formattedMaxDate }}, {{ selectedYear }}
+        </span>
+      </template>
+      <template v-else>
+        in
+        <span class="date-color">{{ selectedYear }} </span>
+      </template>
     </div>
   </div>
 </template>
@@ -115,26 +113,19 @@ export default {
   color: #b2beb5;
 }
 
-.header-wrapper {
-  display: flex;
-  flex-direction: row;
-  align-items: center;
-  justify-content: center;
-  margin-left: 60px;
-  margin-right: 60px;
-  margin-top: 50px;
-}
 .header-message-wrapper {
   display: flex;
   flex-direction: column;
   justify-content: center;
   align-items: center;
+  margin-top: 40px;
 }
 .header-message {
   font-size: 3rem;
   font-weight: 500;
   line-height: 1.1;
   font-family: Montserrat, sans-serif;
+  text-align: center;
 }
 
 .header-submessage {
@@ -144,14 +135,21 @@ export default {
   font-family: Montserrat, sans-serif;
   margin-top: 30px;
   max-width: 700px;
+  text-align: center;
 }
 .header-submessage:nth-child(3) {
   margin-top: 50px;
 }
-@media only screen and (max-width: 768px) {
+@media only screen and (max-width: 767px) {
   .header-submessage {
-    font-size: 1.8rem;
+    font-size: 1.6rem;
     margin-top: 50px;
+    text-align: center;
+    line-height: 1.5;
+  }
+  .header-message {
+    text-align: center;
+    font-size: 2.7rem;
   }
 }
 </style>

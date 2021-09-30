@@ -46,433 +46,418 @@
 
     <!-- Scrollable content -->
     <div class="sidebar-inner-content">
-      <!-- All the panels -->
-      <v-expansion-panels accordion multiple dark v-model="expandedPanels">
-        <!--------------------------------------->
-        <!-- FILTER #1: Fatal vs Nonfatal ------->
-        <!--------------------------------------->
-        <v-expansion-panel class="dark-theme">
-          <v-expansion-panel-header
-            hide-actions
-            class="d-flex flex-column justify-content-center align-items-start"
+      <!--------------------------------------->
+      <!-- Map Layers ------------------------->
+      <!--------------------------------------->
+      <v-container id="map-layers-section">
+        <div class="text-center mt-3 sidebar-subtitle">Map Layers</div>
+        <v-divider class="my-divider" />
+
+        <!-- Checkboxes for layers -->
+        <v-hover v-for="layerName in allowedLayers" :key="layerName">
+          <v-checkbox
+            slot-scope="{ hover }"
+            :value="layerName"
+            v-model="selectedLayers"
+            color="#7ab5e5"
+            hide-details
+            multiple
+            dark
+            dense
+            :ripple="false"
+            @click.native.capture="handleCheckboxClick"
           >
-            <v-switch
-              class="mt-0"
-              v-model="fatalOnly"
-              label="Fatal shootings only"
-              :ripple="false"
-              color="#7ab5e5"
-              hide-details
-            />
-
-            <v-switch
-              v-model="arrestsOnly"
-              label="Incidents with court cases"
-              :ripple="false"
-              color="#7ab5e5"
-              hide-details
-            />
-          </v-expansion-panel-header>
-        </v-expansion-panel>
-
-        <!--------------------------------------->
-        <!-- FILTER #2: Map Layers -------------->
-        <!--------------------------------------->
-        <v-expansion-panel class="dark-theme">
-          <v-expansion-panel-header
-            ><div>Map Layers</div>
-            <div
-              v-if="showReset('mapLayer')"
-              class="reset-link"
-              @click.capture="handleResetClick($event, 'mapLayer')"
-            >
-              Clear
-            </div>
-          </v-expansion-panel-header>
-          <v-expansion-panel-content>
-            <v-hover v-for="layerName in allowedLayers" :key="layerName">
-              <v-checkbox
-                slot-scope="{ hover }"
-                :value="layerName"
-                v-model="selectedLayers"
-                color="#7ab5e5"
-                hide-details
-                multiple
-                :ripple="false"
-                @click.native.capture="handleCheckboxClick"
-              >
-                <template v-slot:label>
-                  <div>
-                    {{ getAlias(layerName, "layer") }}
-                    <span
-                      v-if="hover"
-                      class="only-link"
-                      v-on:click.stop="handleOnlyClickLayer($event, layerName)"
-                      >only</span
-                    >
-                  </div>
-                </template>
-              </v-checkbox>
-            </v-hover>
-          </v-expansion-panel-content>
-        </v-expansion-panel>
+            <template v-slot:label>
+              <div>
+                {{ getAlias(layerName, "layer") }}
+                <span
+                  v-if="hover"
+                  class="only-link"
+                  v-on:click.stop="handleOnlyClickLayer($event, layerName)"
+                  >only</span
+                >
+              </div>
+            </template>
+          </v-checkbox>
+        </v-hover>
 
         <!--------------------------------------->
         <!-- FILTER #3: Aggregation Layers ------>
         <!--------------------------------------->
-        <v-expansion-panel class="dark-theme">
-          <v-expansion-panel-header
-            ><div class="header-content">Aggregation Layers</div>
-            <div
-              v-if="showReset('aggLayer')"
-              class="reset-link"
-              @click.capture="handleResetClick($event, 'aggLayer')"
+        <div id="aggregate-select-wrapper">
+          <v-select
+            id="aggregate-select"
+            :items="aggLayerItems"
+            label="Aggregation Layer"
+            clearable
+            dark
+            hide-details
+            :ripple="false"
+            v-model="selectedAggLayers"
+          />
+        </div>
+
+        <!-- Opacity slider -->
+        <div class="d-flex flex-row align-items-center justify-content-start">
+          <v-subheader class="pl-0" id="opacityLabel">Opacity</v-subheader>
+          <vue-slider
+            class="opacity-slider"
+            :disabled="selectedAggLayers === null"
+            v-model="aggLayerOpacity"
+            :lazy="true"
+            :tooltip="'none'"
+            :enableCross="false"
+            @drag-end="$emit('opacity-change', aggLayerOpacity / 100)"
+            width="50%"
+            :clickable="false"
+            :max="50"
+            :min="0"
+            aria-labelledby="opacityLabel"
+          />
+        </div>
+      </v-container>
+      <v-container id="filters-section">
+        <div class="text-center sidebar-subtitle">Filters</div>
+        <v-divider class="my-divider" />
+
+        <v-expansion-panels accordion multiple dark v-model="expandedPanels">
+          <!--------------------------------------->
+          <!-- FILTER: Fatal vs Nonfatal ------->
+          <!--------------------------------------->
+          <v-expansion-panel class="dark-theme">
+            <v-expansion-panel-header
+              hide-actions
+              class="
+                d-flex
+                flex-column
+                justify-content-center
+                align-items-start
+              "
             >
-              Clear
-            </div>
-          </v-expansion-panel-header>
-          <v-expansion-panel-content>
-            <!-- Layer options -->
-            <v-radio-group v-model="selectedAggLayers" id="aggLayerRadioGroup">
-              <v-radio
-                v-for="layerName in allowedAggLayers"
-                :key="layerName"
-                :label="getAlias(layerName, 'aggLayer')"
-                :value="layerName"
+              <v-switch
+                class="mt-0"
+                v-model="fatalOnly"
+                label="Fatal shootings only"
+                :ripple="false"
                 color="#7ab5e5"
                 hide-details
-                :ripple="false"
-                @click.native.capture="handleCheckboxClick"
-                id="aggLayerRadio"
-              >
-              </v-radio>
-            </v-radio-group>
-
-            <!-- Opacity slider -->
-            <div
-              :style="{ opacity: selectedAggLayers !== null ? 1 : 0 }"
-              class="d-flex flex-row align-items-center"
-            >
-              <span class="mr-3" id="opacityLabel">Layer Opacity</span>
-              <vue-slider
-                class="opacity-slider"
-                v-model="aggLayerOpacity"
-                :lazy="true"
-                :tooltip="'none'"
-                :enableCross="false"
-                @drag-end="$emit('opacity-change', aggLayerOpacity / 100)"
-                width="50%"
-                :clickable="false"
-                :max="50"
-                :min="0"
-                aria-labelledby="opacityLabel"
               />
-            </div>
-          </v-expansion-panel-content>
-        </v-expansion-panel>
 
-        <!--------------------------------------->
-        <!-- FILTER #4: Date Filter ------------->
-        <!--------------------------------------->
-        <v-expansion-panel class="dark-theme">
-          <v-expansion-panel-header
-            ><div class="header-content">Date</div>
-            <div
-              v-if="showReset('date')"
-              class="reset-link"
-              @click.capture="handleResetClick($event, 'date')"
-            >
-              Reset
-            </div>
-          </v-expansion-panel-header>
-          <v-expansion-panel-content>
-            <SliderHistogramChart
-              height="100"
-              v-if="histograms['date']"
-              :width="getHistogramWidth()"
-              :data="histograms['date']"
-              :lower="getAgeMs(dateRange[0] - 1)"
-              :upper="getAgeMs(dateRange[1] + 1)"
-              :xmin="getAgeMs(allowedDateRange[0])"
-              :xmax="getAgeMs(allowedDateRange[1])"
-            />
+              <v-switch
+                v-model="arrestsOnly"
+                label="Incidents with court cases"
+                :ripple="false"
+                color="#7ab5e5"
+                hide-details
+              />
+            </v-expansion-panel-header>
+          </v-expansion-panel>
 
-            <vue-slider
-              class="date-slider"
-              v-model="dateRange"
-              :min="allowedDateRange[0]"
-              :max="allowedDateRange[1]"
-              :lazy="true"
-              :tooltip-placement="dateTooltipPlacement"
-              tooltip="always"
-              :enableCross="false"
-              @drag-end="sendDateUpdate"
-              :tooltip-formatter="formatSliderTooltip"
-              width="80%"
-              :clickable="false"
-            ></vue-slider>
-          </v-expansion-panel-content>
-        </v-expansion-panel>
-
-        <!--------------------------------------->
-        <!-- FILTER #5: Time -------------------->
-        <!--------------------------------------->
-        <v-expansion-panel class="dark-theme">
-          <v-expansion-panel-header
-            ><div class="header-content">Time</div>
-            <div
-              v-if="showReset('time')"
-              class="reset-link"
-              @click.capture="handleResetClick($event, 'time')"
-            >
-              Reset
-            </div>
-          </v-expansion-panel-header>
-          <v-expansion-panel-content>
-            <SliderHistogramChart
-              height="100"
-              v-if="histograms['time']"
-              :width="getHistogramWidth()"
-              :data="histograms['time']"
-              :lower="timeRange[0]"
-              :upper="timeRange[1]"
-              :xmin="allowedTimeRange[0]"
-              :xmax="allowedTimeRange[1]"
-            />
-
-            <vue-slider
-              class="time-slider"
-              v-model="timeRange"
-              :min="allowedTimeRange[0]"
-              :max="allowedTimeRange[1]"
-              :lazy="true"
-              tooltip="always"
-              :enableCross="false"
-              @drag-end="sendTimeUpdate"
-              :tooltip-placement="timeTooltipPlacement"
-              :tooltip-formatter="formatTimeSliderTooltip"
-              width="80%"
-              :clickable="false"
-            ></vue-slider>
-          </v-expansion-panel-content>
-        </v-expansion-panel>
-
-        <!--------------------------------------->
-        <!-- FILTER #6: Day of week ---------->
-        <!--------------------------------------->
-        <v-expansion-panel class="dark-theme">
-          <v-expansion-panel-header
-            ><div class="header-content">Day of Week</div>
-            <div
-              v-if="showReset('weekday')"
-              class="reset-link"
-              @click.capture="handleResetClick($event, 'weekday')"
-            >
-              Reset
-            </div>
-          </v-expansion-panel-header>
-          <v-expansion-panel-content>
-            <v-row>
-              <template
-                v-for="(item, i) in [
-                  { lower: 0, upper: 4 },
-                  { lower: 4, upper: 7 },
-                ]"
+          <!--------------------------------------->
+          <!-- FILTER #4: Date Filter ------------->
+          <!--------------------------------------->
+          <v-expansion-panel class="dark-theme">
+            <v-expansion-panel-header
+              ><div class="header-content">Date</div>
+              <div
+                v-if="showReset('date')"
+                class="reset-link"
+                @click.capture="handleResetClick($event, 'date')"
               >
-                <v-col
-                  cols="12"
-                  sm="12"
-                  md="6"
-                  lg="6"
-                  :key="`col-${item.lower}-${item.upper}`"
-                  :class="getMultiColumnClass(i)"
+                Reset
+              </div>
+            </v-expansion-panel-header>
+            <v-expansion-panel-content>
+              <SliderHistogramChart
+                height="100"
+                v-if="histograms['date']"
+                :width="getHistogramWidth()"
+                :data="histograms['date']"
+                :lower="getAgeMs(dateRange[0] - 1)"
+                :upper="getAgeMs(dateRange[1] + 1)"
+                :xmin="getAgeMs(allowedDateRange[0])"
+                :xmax="getAgeMs(allowedDateRange[1])"
+              />
+
+              <vue-slider
+                class="date-slider"
+                v-model="dateRange"
+                :min="allowedDateRange[0]"
+                :max="allowedDateRange[1]"
+                :lazy="true"
+                :tooltip-placement="dateTooltipPlacement"
+                tooltip="always"
+                :enableCross="false"
+                @drag-end="sendDateUpdate"
+                :tooltip-formatter="formatSliderTooltip"
+                width="80%"
+                :clickable="false"
+              ></vue-slider>
+            </v-expansion-panel-content>
+          </v-expansion-panel>
+
+          <!--------------------------------------->
+          <!-- FILTER #5: Time -------------------->
+          <!--------------------------------------->
+          <v-expansion-panel class="dark-theme">
+            <v-expansion-panel-header
+              ><div class="header-content">Time</div>
+              <div
+                v-if="showReset('time')"
+                class="reset-link"
+                @click.capture="handleResetClick($event, 'time')"
+              >
+                Reset
+              </div>
+            </v-expansion-panel-header>
+            <v-expansion-panel-content>
+              <SliderHistogramChart
+                height="100"
+                v-if="histograms['time']"
+                :width="getHistogramWidth()"
+                :data="histograms['time']"
+                :lower="timeRange[0]"
+                :upper="timeRange[1]"
+                :xmin="allowedTimeRange[0]"
+                :xmax="allowedTimeRange[1]"
+              />
+
+              <vue-slider
+                class="time-slider"
+                v-model="timeRange"
+                :min="allowedTimeRange[0]"
+                :max="allowedTimeRange[1]"
+                :lazy="true"
+                tooltip="always"
+                :enableCross="false"
+                @drag-end="sendTimeUpdate"
+                :tooltip-placement="timeTooltipPlacement"
+                :tooltip-formatter="formatTimeSliderTooltip"
+                width="80%"
+                :clickable="false"
+              ></vue-slider>
+            </v-expansion-panel-content>
+          </v-expansion-panel>
+
+          <!--------------------------------------->
+          <!-- FILTER #6: Day of week ---------->
+          <!--------------------------------------->
+          <v-expansion-panel class="dark-theme">
+            <v-expansion-panel-header
+              ><div class="header-content">Day of Week</div>
+              <div
+                v-if="showReset('weekday')"
+                class="reset-link"
+                @click.capture="handleResetClick($event, 'weekday')"
+              >
+                Reset
+              </div>
+            </v-expansion-panel-header>
+            <v-expansion-panel-content>
+              <v-row>
+                <template
+                  v-for="(item, i) in [
+                    { lower: 0, upper: 4 },
+                    { lower: 4, upper: 7 },
+                  ]"
                 >
-                  <v-hover
-                    v-for="weekday in allowedWeekdays.slice(
-                      item.lower,
-                      item.upper
-                    )"
-                    :key="weekday"
+                  <v-col
+                    cols="12"
+                    sm="12"
+                    md="6"
+                    lg="6"
+                    :key="`col-${item.lower}-${item.upper}`"
+                    :class="getMultiColumnClass(i)"
                   >
-                    <v-checkbox
-                      slot-scope="{ hover }"
-                      :value="weekday"
-                      v-model="selectedWeekdays"
-                      color="#7ab5e5"
-                      hide-details
-                      multiple
-                      :ripple="false"
-                      @click.native.capture="handleCheckboxClick"
+                    <v-hover
+                      v-for="weekday in allowedWeekdays.slice(
+                        item.lower,
+                        item.upper
+                      )"
+                      :key="weekday"
                     >
-                      <template v-slot:label>
-                        <div>
-                          {{ getAlias(weekday, "weekday") }}
-                          <span
-                            v-if="hover"
-                            class="only-link"
-                            v-on:click.stop="
-                              handleOnlyClickWeekday($event, weekday)
-                            "
-                            >only</span
-                          >
-                        </div>
-                      </template>
-                    </v-checkbox>
-                  </v-hover>
-                </v-col>
-              </template>
-            </v-row>
-          </v-expansion-panel-content>
-        </v-expansion-panel>
+                      <v-checkbox
+                        slot-scope="{ hover }"
+                        :value="weekday"
+                        v-model="selectedWeekdays"
+                        color="#7ab5e5"
+                        hide-details
+                        multiple
+                        :ripple="false"
+                        @click.native.capture="handleCheckboxClick"
+                      >
+                        <template v-slot:label>
+                          <div>
+                            {{ getAlias(weekday, "weekday") }}
+                            <span
+                              v-if="hover"
+                              class="only-link"
+                              v-on:click.stop="
+                                handleOnlyClickWeekday($event, weekday)
+                              "
+                              >only</span
+                            >
+                          </div>
+                        </template>
+                      </v-checkbox>
+                    </v-hover>
+                  </v-col>
+                </template>
+              </v-row>
+            </v-expansion-panel-content>
+          </v-expansion-panel>
 
-        <!--------------------------------------->
-        <!-- FILTER #7: Race/Ethnicity ---------->
-        <!--------------------------------------->
-        <v-expansion-panel class="dark-theme">
-          <v-expansion-panel-header
-            ><div class="header-content">Race/Ethnicity</div>
-            <div
-              v-if="showReset('race')"
-              class="reset-link"
-              @click.capture="handleResetClick($event, 'race')"
-            >
-              Reset
-            </div>
-          </v-expansion-panel-header>
-          <v-expansion-panel-content>
-            <v-hover v-for="raceValue in allowedRaces" :key="raceValue">
-              <v-checkbox
-                slot-scope="{ hover }"
-                :value="raceValue"
-                v-model="selectedRaces"
+          <!--------------------------------------->
+          <!-- FILTER #7: Race/Ethnicity ---------->
+          <!--------------------------------------->
+          <v-expansion-panel class="dark-theme">
+            <v-expansion-panel-header
+              ><div class="header-content">Race/Ethnicity</div>
+              <div
+                v-if="showReset('race')"
+                class="reset-link"
+                @click.capture="handleResetClick($event, 'race')"
+              >
+                Reset
+              </div>
+            </v-expansion-panel-header>
+            <v-expansion-panel-content>
+              <v-hover v-for="raceValue in allowedRaces" :key="raceValue">
+                <v-checkbox
+                  slot-scope="{ hover }"
+                  :value="raceValue"
+                  v-model="selectedRaces"
+                  color="#7ab5e5"
+                  hide-details
+                  multiple
+                  :ripple="false"
+                  @click.native.capture="handleCheckboxClick"
+                >
+                  <template v-slot:label>
+                    <div>
+                      {{ getAlias(raceValue, "race") }}
+                      <span
+                        v-if="hover"
+                        class="only-link"
+                        v-on:click.stop="handleOnlyClickRace($event, raceValue)"
+                        >only</span
+                      >
+                    </div>
+                  </template>
+                </v-checkbox>
+              </v-hover>
+            </v-expansion-panel-content>
+          </v-expansion-panel>
+
+          <!--------------------------------------->
+          <!-- FILTER #8: Gender ------------------>
+          <!--------------------------------------->
+          <v-expansion-panel class="dark-theme">
+            <v-expansion-panel-header
+              ><div class="header-content">Gender</div>
+              <div
+                v-if="showReset('sex')"
+                class="reset-link"
+                @click.capture="handleResetClick($event, 'sex')"
+              >
+                Reset
+              </div>
+            </v-expansion-panel-header>
+            <v-expansion-panel-content>
+              <v-hover v-for="genderValue in allowedGenders" :key="genderValue">
+                <v-checkbox
+                  class="w-50"
+                  slot-scope="{ hover }"
+                  :value="genderValue"
+                  v-model="selectedGenders"
+                  color="#7ab5e5"
+                  hide-details
+                  multiple
+                  :ripple="false"
+                  @click.native.capture="handleCheckboxClick"
+                >
+                  <template v-slot:label>
+                    <div>
+                      {{ getAlias(genderValue, "sex") }}
+                      <span
+                        v-if="hover"
+                        class="only-link"
+                        v-on:click.stop="
+                          handleOnlyClickGender($event, genderValue)
+                        "
+                        >only</span
+                      >
+                    </div>
+                  </template>
+                </v-checkbox>
+              </v-hover>
+            </v-expansion-panel-content>
+          </v-expansion-panel>
+
+          <!--------------------------------------->
+          <!-- FILTER #9: Age --------------------->
+          <!--------------------------------------->
+          <v-expansion-panel class="dark-theme">
+            <v-expansion-panel-header
+              ><div class="header-content">Age</div>
+              <div
+                v-if="showReset('age')"
+                class="reset-link"
+                @click.capture="handleResetClick($event, 'age')"
+              >
+                Reset
+              </div>
+            </v-expansion-panel-header>
+            <v-expansion-panel-content>
+              <!-- Test -->
+
+              <SliderHistogramChart
+                height="100"
+                v-if="histograms['age']"
+                :width="getHistogramWidth()"
+                :data="histograms['age']"
+                :lower="ageRange[0]"
+                :upper="ageRange[1] + 1"
+                :xmin="allowedAgeRange[0]"
+                :xmax="allowedAgeRange[1] + 1"
+              />
+
+              <!-- Age slider -->
+              <vue-slider
+                class="age-slider"
+                v-model="ageRange"
+                :min="allowedAgeRange[0]"
+                :max="allowedAgeRange[1]"
+                :lazy="true"
+                :tooltip-placement="ageTooltipPlacement"
+                tooltip="always"
+                :enableCross="false"
+                @drag-end="sendAgeUpdate"
+                width="80%"
+                :clickable="false"
+              />
+
+              <!-- How to handle unknown ages? -->
+              <v-switch
+                class="mt-5 pt-5"
+                v-model="excludeUnknownAges"
+                label="Exclude unknown ages"
+                :ripple="false"
                 color="#7ab5e5"
                 hide-details
-                multiple
-                :ripple="false"
-                @click.native.capture="handleCheckboxClick"
-              >
-                <template v-slot:label>
-                  <div>
-                    {{ getAlias(raceValue, "race") }}
-                    <span
-                      v-if="hover"
-                      class="only-link"
-                      v-on:click.stop="handleOnlyClickRace($event, raceValue)"
-                      >only</span
-                    >
-                  </div>
-                </template>
-              </v-checkbox>
-            </v-hover>
-          </v-expansion-panel-content>
-        </v-expansion-panel>
-
-        <!--------------------------------------->
-        <!-- FILTER #8: Gender ------------------>
-        <!--------------------------------------->
-        <v-expansion-panel class="dark-theme">
-          <v-expansion-panel-header
-            ><div class="header-content">Gender</div>
-            <div
-              v-if="showReset('sex')"
-              class="reset-link"
-              @click.capture="handleResetClick($event, 'sex')"
-            >
-              Reset
-            </div>
-          </v-expansion-panel-header>
-          <v-expansion-panel-content>
-            <v-hover v-for="genderValue in allowedGenders" :key="genderValue">
-              <v-checkbox
-                slot-scope="{ hover }"
-                :value="genderValue"
-                v-model="selectedGenders"
-                color="#7ab5e5"
-                hide-details
-                multiple
-                :ripple="false"
-                @click.native.capture="handleCheckboxClick"
-              >
-                <template v-slot:label>
-                  <div>
-                    {{ getAlias(genderValue, "gender") }}
-                    <span
-                      v-if="hover"
-                      class="only-link"
-                      v-on:click.stop="
-                        handleOnlyClickGender($event, genderValue)
-                      "
-                      >only</span
-                    >
-                  </div>
-                </template>
-              </v-checkbox>
-            </v-hover>
-          </v-expansion-panel-content>
-        </v-expansion-panel>
-
-        <!--------------------------------------->
-        <!-- FILTER #9: Age --------------------->
-        <!--------------------------------------->
-        <v-expansion-panel class="dark-theme">
-          <v-expansion-panel-header
-            ><div class="header-content">Age</div>
-            <div
-              v-if="showReset('age')"
-              class="reset-link"
-              @click.capture="handleResetClick($event, 'age')"
-            >
-              Reset
-            </div>
-          </v-expansion-panel-header>
-          <v-expansion-panel-content>
-            <!-- Test -->
-
-            <SliderHistogramChart
-              height="100"
-              v-if="histograms['age']"
-              :width="getHistogramWidth()"
-              :data="histograms['age']"
-              :lower="ageRange[0]"
-              :upper="ageRange[1] + 1"
-              :xmin="allowedAgeRange[0]"
-              :xmax="allowedAgeRange[1] + 1"
-            />
-
-            <!-- Age slider -->
-            <vue-slider
-              class="age-slider"
-              v-model="ageRange"
-              :min="allowedAgeRange[0]"
-              :max="allowedAgeRange[1]"
-              :lazy="true"
-              :tooltip-placement="ageTooltipPlacement"
-              tooltip="always"
-              :enableCross="false"
-              @drag-end="sendAgeUpdate"
-              width="80%"
-              :clickable="false"
-            />
-
-            <!-- How to handle unknown ages? -->
-            <v-switch
-              class="mt-5 pt-5"
-              v-model="excludeUnknownAges"
-              label="Exclude unknown ages"
-              :ripple="false"
-              color="#7ab5e5"
-              hide-details
-            ></v-switch>
-          </v-expansion-panel-content>
-        </v-expansion-panel>
-      </v-expansion-panels>
+              ></v-switch>
+            </v-expansion-panel-content>
+          </v-expansion-panel>
+        </v-expansion-panels>
+      </v-container>
     </div>
   </div>
 </template>
 
 <script>
 // Internal
-import { formatDate, msToTimeString, dateFromDay } from "@/tools.js";
+import { formatDate, msToTimeString, dateFromDay, toItemsArray } from "@/tools";
+import { ALIASES, CATEGORIES } from "@/data-dict";
 import SliderHistogramChart from "./SliderHistogramChart";
 import DownloadButton from "./DownloadButton";
 
@@ -499,69 +484,36 @@ export default {
   ],
   data() {
     return {
-      expandedPanels: [1],
+      expandedPanels: [],
       aggLayerOpacity: 50,
       excludeUnknownAges: false,
       scrollable: true,
-      openPanels: [0],
       onlyClick: false,
-      allowedRaces: ["W", "B", "H", "A", "Other/Unknown"],
-      allowedWeekdays: [0, 1, 2, 3, 4, 5, 6],
-      allowedGenders: ["M", "F"],
+      aliases: ALIASES,
+
+      // Allowed values
       allowedTimeRange: [0, 86399999],
-      allowedLayers: ["points", "heatmap", "streets"],
-      allowedAggLayers: [
-        "council",
-        "zip",
-        "police",
-        "hood",
-        "house_district",
-        "school",
-      ],
-      fatalOnly: false,
-      arrestsOnly: false,
+      allowedRaces: Object.keys(ALIASES["race"]),
+      allowedWeekdays: Object.keys(ALIASES["weekday"]).map((d) => +d), // store as int
+      allowedGenders: Object.keys(ALIASES["sex"]),
+      allowedLayers: Object.keys(ALIASES["layer"]),
+      allowedAggLayers: Object.keys(ALIASES["aggLayer"]),
+
+      // Default selections
+      selectedRaces: Object.keys(ALIASES["race"]),
+      selectedWeekdays: Object.keys(ALIASES["weekday"]).map((d) => +d),
+      selectedGenders: Object.keys(ALIASES["sex"]),
       selectedLayers: ["points"],
       selectedAggLayers: null,
-      selectedRaces: ["W", "B", "H", "A", "Other/Unknown"],
-      selectedWeekdays: [0, 1, 2, 3, 4, 5, 6],
-      selectedGenders: ["M", "F"],
+
+      // Ranges for sliders
       ageRange: [0, 100],
       dateRange: [1, 366],
       timeRange: [0, 86399999],
-      aliases: {
-        weekday: {
-          0: "Sunday",
-          1: "Monday",
-          2: "Tuesday",
-          3: "Wednesday",
-          4: "Thursday",
-          5: "Friday",
-          6: "Saturday",
-        },
-        race: {
-          W: "White (Non-Hispanic)",
-          B: "Black (Non-Hispanic)",
-          H: "Hispanic (Black or White)",
-          A: "Asian",
-        },
-        gender: {
-          M: "Male",
-          F: "Female",
-        },
-        layer: {
-          points: "Point locations",
-          heatmap: "Heat map",
-          streets: "Hot spots by street block",
-        },
-        aggLayer: {
-          council: "Council Districts",
-          police: "Police Districts",
-          zip: "ZIP Codes",
-          hood: "Neighborhoods",
-          school: "Elementary School Catchments",
-          house_district: "PA House Districts",
-        },
-      },
+
+      // Flags for switches
+      fatalOnly: false,
+      arrestsOnly: false,
     };
   },
   watch: {
@@ -741,10 +693,7 @@ export default {
     handleOnlyClickLayer(event, value) {
       this.onlyClick = true;
       this.selectedLayers = [value];
-    },
-    handleOnlyClickAggLayer(event, value) {
-      this.onlyClick = true;
-      this.selectedAggLayers = value;
+      this.selectedAggLayers = null;
     },
     handleOnlyClickGender(event, value) {
       this.onlyClick = true;
@@ -769,6 +718,9 @@ export default {
     },
   },
   computed: {
+    aggLayerItems() {
+      return toItemsArray(ALIASES["aggLayer"]);
+    },
     aggLayers() {
       return Object.keys(this.aggLayerURLs);
     },
@@ -810,6 +762,26 @@ export default {
 </script>
 
 <style>
+.sidebar-subtitle {
+  font-size: 1.6rem;
+  font-weight: 500;
+  margin-bottom: 0.5rem;
+}
+#filters-section {
+  margin-top: 20px;
+}
+#map-layers-section {
+  padding: 16px 24px;
+}
+input#aggregate-select:focus {
+  background-color: transparent;
+}
+#aggregate-select-wrapper {
+  margin-top: 1.5rem;
+}
+.my-divider {
+  border-top: 2px solid #7ab5e5 !important;
+}
 .sidebar-inner-content .v-expansion-panel:before {
   box-shadow: none !important;
 }
@@ -835,11 +807,12 @@ export default {
   height: 800px;
   display: flex;
   flex-direction: column;
+  border-left: 5px solid #868b8e;
 }
 @media only screen and (max-width: 767px) {
   .shootings-map-sidebar {
     width: 100%;
-    height: 500px;
+    height: 800px;
   }
 }
 .sidebar-inner-content {
@@ -941,6 +914,13 @@ export default {
 }
 
 #buttons-section {
-  border-bottom: 3px solid #cfcfcf;
+  border-bottom: 5px solid #868b8e;
+}
+
+@media only screen and (max-width: 767px) {
+  .shootings-map-sidebar {
+    border-top: 5px solid #868b8e;
+    border-left-width: 0px;
+  }
 }
 </style>

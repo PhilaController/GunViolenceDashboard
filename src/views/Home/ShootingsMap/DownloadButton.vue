@@ -28,6 +28,7 @@
           label="Data Selection"
           v-model="selectionRadio"
           row
+          hide-details
         >
           <v-radio
             v-for="(item, i) in selectionGroups"
@@ -38,7 +39,13 @@
         </v-radio-group>
 
         <!-- Download Format -->
-        <v-radio-group label="Download Format" v-model="formatRadio" row>
+        <v-radio-group
+          hide-details
+          class="mt-5"
+          label="Download Format"
+          v-model="formatRadio"
+          row
+        >
           <v-radio
             v-for="(item, i) in formatGroups"
             :key="item"
@@ -48,20 +55,27 @@
         </v-radio-group>
 
         <!-- Select for Aggregation Download -->
-        <v-select
-          id="aggregate-select"
-          :items="aggLayerItems"
-          label="Aggregate By (Optional)"
-          clearable
-          v-model="selectedAgg"
-        ></v-select>
+        <div id="aggregate-select-wrapper">
+          <v-select
+            id="aggregate-select"
+            class="mb-5"
+            :items="aggLayerItems"
+            label="Aggregate By (Optional)"
+            clearable
+            v-model="selectedAgg"
+            hide-details
+            :ripple="false"
+          />
+        </div>
       </v-card-text>
 
-      <v-divider></v-divider>
+      <v-divider class="my-divider"></v-divider>
 
       <v-card-actions>
         <v-spacer></v-spacer>
-        <v-btn color="primary" text @click="downloadData"> Download </v-btn>
+        <v-btn color="primary" :ripple="false" text @click="downloadData">
+          Download
+        </v-btn>
       </v-card-actions>
     </v-card>
   </v-dialog>
@@ -159,4 +173,7 @@ export default {
 </script>
 
 <style>
+#aggregate-select-wrapper {
+  margin-top: 1.2rem;
+}
 </style>

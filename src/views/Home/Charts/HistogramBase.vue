@@ -32,6 +32,7 @@
 // Internal
 import a11yTable from "@/components/a11yTable";
 import { formatNumber } from "@/tools.js";
+import { CATEGORIES, ALIASES } from "@/data-dict";
 
 // External
 import { rollup, sum } from "d3-array";
@@ -41,7 +42,12 @@ export default {
   props: ["data"],
   components: { apexchart: VueApexCharts, a11yTable },
   data() {
-    return { labelWidth: 200, responsiveLabelWidth: 125 };
+    return {
+      labelWidth: 200,
+      responsiveLabelWidth: 100,
+      key: null,
+      dataKey: (d) => d.properties[this.key],
+    };
   },
   methods: {
     getAlias(value) {
@@ -58,6 +64,12 @@ export default {
     },
   },
   computed: {
+    categories() {
+      return CATEGORIES[this.key];
+    },
+    aliases() {
+      return ALIASES[this.key] || {};
+    },
     showChart() {
       if (!this.data) return false;
       else return this.data.length > 0;
@@ -107,6 +119,7 @@ export default {
         plotOptions: {
           bar: {
             horizontal: true,
+            barHeight: "60%",
             dataLabels: { position: "bottom" },
           },
         },
@@ -114,8 +127,10 @@ export default {
           type: "category",
           categories: this.categories,
           labels: {
-            style: { fontSize: "1rem" },
+            show: false,
           },
+          axisTicks: { show: false },
+          axisBorder: { width: 5 },
         },
 
         yaxis: {
@@ -173,6 +188,12 @@ export default {
 </script>
 
 <style>
+.apexcharts-text apexcharts-yaxis-label {
+  baseline: central !important;
+}
+.apexcharts-grid line:nth-last-child(2) {
+  stroke: #353d42 !important;
+}
 .no-data-message {
   font-size: 1rem;
   font-weight: 300;

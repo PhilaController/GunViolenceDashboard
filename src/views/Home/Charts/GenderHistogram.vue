@@ -10,12 +10,7 @@ export default {
       height: 175,
       color: "#964a92",
       chartTitle: "Gender",
-      dataKey: (d) => d.properties.sex,
-      categories: ["M", "F"],
-      aliases: {
-        M: "Male",
-        F: "Female",
-      },
+      key: "sex",
     };
   },
 };

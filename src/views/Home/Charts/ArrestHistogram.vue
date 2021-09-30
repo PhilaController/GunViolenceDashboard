@@ -10,12 +10,7 @@ export default {
       height: 175,
       color: "#868b8e",
       chartTitle: "Associated Court Cases",
-      dataKey: (d) => d.properties.has_court_case,
-      categories: [true, false],
-      aliases: {
-        true: "Yes",
-        false: "No",
-      },
+      key: "has_court_case",
     };
   },
 };

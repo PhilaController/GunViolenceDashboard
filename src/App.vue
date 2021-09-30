@@ -104,6 +104,7 @@ export default {
   font-size: 1.2rem;
   color: #b2beb5;
   background-color: #353d42;
+  margin-top: 20px;
 }
 .year-message-content {
   display: flex;
@@ -140,6 +141,7 @@ export default {
 #year-select-wrapper {
   width: 77px !important;
   margin-left: 0.5rem;
+  margin-top: 5px;
 }
 #year-select-wrapper .v-select__selection {
   font-size: 1.2rem !important;
@@ -167,9 +169,14 @@ export default {
   padding-bottom: 100px;
 }
 
-h2,
+#app h2,
 h3 {
   margin-top: 0 !important;
   margin-bottom: 1rem !important;
+}
+
+.help-message {
+  font-weight: normal !important;
+  padding-bottom: 1rem;
 }
 </style>

@@ -10,12 +10,8 @@ export default {
       height: 175,
       color: "#49bf9a",
       chartTitle: "Outcome",
+      key: "fatal",
       dataKey: (d) => d.properties.fatal == 1,
-      categories: [true, false],
-      aliases: {
-        true: "Fatal",
-        false: "Nonfatal",
-      },
     };
   },
 };

@@ -1,6 +1,15 @@
 import { timeParse } from "d3-time-format";
 import * as Papa from "papaparse"
 
+function toItemsArray(obj) {
+
+    let out = [];
+    for (let key in obj) {
+        out.push({ value: key, text: obj[key] });
+    }
+    return out;
+}
+
 function trimHeaders(arr, headers) {
 
     return headers.reduce((acc, curr) => {
@@ -140,5 +149,6 @@ export {
     parseTime,
     downloadFile,
     jsonToCSV,
-    jsonToGeoJson
+    jsonToGeoJson,
+    toItemsArray
 };

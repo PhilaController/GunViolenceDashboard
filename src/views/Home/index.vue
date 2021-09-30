@@ -77,6 +77,7 @@ import {
   getMsSinceMidnight,
   downloadFile,
 } from "@/tools.js";
+import { AGG_LAYER_URLS, DIMS } from "@/data-dict";
 import HeaderMessage from "./HeaderMessage";
 
 // Shootings map
@@ -104,18 +105,8 @@ export default {
   },
   data() {
     return {
-      aggLayerURLs: {
-        police:
-          "https://services.arcgis.com/fLeGjb7u4uXqeF9q/arcgis/rest/services/Boundaries_District/FeatureServer/0",
-        council:
-          "https://services.arcgis.com/fLeGjb7u4uXqeF9q/arcgis/rest/services/Council_Districts_2016/FeatureServer/0/",
-        zip: "https://services.arcgis.com/fLeGjb7u4uXqeF9q/arcgis/rest/services/Philadelphia_ZCTA_2018/FeatureServer/0",
-        hood: "https://services.arcgis.com/fLeGjb7u4uXqeF9q/arcgis/rest/services/Philly_NTAs/FeatureServer/0",
-        house_district:
-          "https://services.arcgis.com/fLeGjb7u4uXqeF9q/arcgis/rest/services/PA_House_Districts/FeatureServer/0",
-        school:
-          "https://services.arcgis.com/fLeGjb7u4uXqeF9q/arcgis/rest/services/Philadelphia_Elementary_School_Catchments_SY_2019_2020/FeatureServer/0",
-      },
+      currentYear: new Date().getFullYear(),
+      aggLayerURLs: AGG_LAYER_URLS,
       data: {},
       histograms: {},
       aggLayerOpacity: 0.5,
@@ -123,27 +114,11 @@ export default {
       filteredData: null,
       homicideData: null,
       crossfilters: {},
-      dimensions: {
-        date: {},
-        time: {},
-        fatal: {},
-        race: {},
-        age: {},
-        sex: {},
-        has_court_case: {},
-        weekday: {},
-      },
-      currentYear: new Date().getFullYear(),
-      currentFilters: {
-        date: null,
-        time: null,
-        fatal: null,
-        race: null,
-        age: null,
-        sex: null,
-        has_court_case: null,
-        weekday: null,
-      },
+      dimensions: DIMS.reduce((o, key) => Object.assign(o, { [key]: {} }), {}),
+      currentFilters: DIMS.reduce(
+        (o, key) => Object.assign(o, { [key]: null }),
+        {}
+      ),
       allowedAgeRange: [0, 100],
       allowedDateRange: [1, 366],
       fatalCount: 0,
@@ -392,7 +367,7 @@ export default {
       this.applyFilter("time");
     },
     applyFilter(filterName) {
-      // Filter by the date
+      // Filter
       this.dimensions[filterName][this.selectedYear].filter(
         this.currentFilters[filterName]
       );

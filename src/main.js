@@ -25,20 +25,25 @@ Icon.Default.mergeOptions({
 
 // load and set the HTML template we are using
 let audit_content = $("#main");
-audit_content.html(`<div id="app"></div>`);
+audit_content.html(`
+<div id="app"></div>
+<div class="back-link m-5">
+<a href="https://controller.phila.gov/policy-analysis/reports/">
+  <i class="fas fa-arrow-square-left"></i> Back to All Reports
+</a>
+<p class='help-message mb-5'>
+  Comments or feedback? Please contact
+  <a href="mailto:controller.policy@phila.gov">controller.policy@phila.gov</a>.
+  </p>
+</div>`
+);
 
 // remove the report button
 $(".entry-header .btn")
   .first()
   .remove();
 
-// add help message
-let helpMessage = `<p class='help-message'>
-  Comments or feedback? Please contact
-  <a href="mailto:controller.policy@phila.gov">controller.policy@phila.gov</a>.
-  </p>`;
-$(".back-link").after(helpMessage);
-
+// Initialize
 getRouter().then(router => {
   new Vue({
     router,
