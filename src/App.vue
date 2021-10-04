@@ -104,7 +104,6 @@ export default {
   font-size: 1.2rem;
   color: #b2beb5;
   background-color: #353d42;
-  margin-top: 20px;
 }
 .year-message-content {
   display: flex;
@@ -165,8 +164,15 @@ export default {
 }
 
 #app {
-  padding-top: 5px;
+  padding-top: 5px !important;
   padding-bottom: 100px;
+  overflow-x: hidden;
+}
+
+@media only screen and (min-width: 740px) and (max-width: 1000px) {
+  #app {
+    padding-top: 20px !important;
+  }
 }
 
 #app h2,

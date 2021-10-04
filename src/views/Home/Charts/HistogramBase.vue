@@ -247,4 +247,7 @@ export default {
     padding-left: 0px;
   }
 }
+.my-divider {
+  max-width: 90px !important;
+}
 </style>
