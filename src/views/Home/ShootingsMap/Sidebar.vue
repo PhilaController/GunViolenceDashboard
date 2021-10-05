@@ -88,10 +88,11 @@
           <v-select
             id="aggregate-select"
             :items="aggLayerItems"
-            label="Aggregation Layer"
+            label="Aggregation Layer (Optional)"
+            hint="Choose a geography to aggregate the data by"
+            persistent-hint
             clearable
             dark
-            hide-details
             :ripple="false"
             v-model="selectedAggLayers"
           />
