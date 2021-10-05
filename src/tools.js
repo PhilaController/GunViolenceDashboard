@@ -2,6 +2,17 @@ import { timeParse } from "d3-time-format";
 import * as Papa from "papaparse"
 import { ALIASES } from "@/data-dict"
 
+function renameKeys(d, headers) {
+
+
+    let out = {};
+    Object.keys(d).forEach(function (key) {
+        out[headers[key]] = d[key];
+    });
+    return out;
+
+}
+
 function toItemsArray(obj) {
 
     let out = [];
@@ -21,10 +32,11 @@ function trimHeaders(arr, headers) {
 
 function jsonToGeoJson(data, headers) {
     //   Trim keys
+    let headerKeys = Object.keys(headers)
     let features = data.map((o, i) => {
         return {
             type: "Feature", id: i, geometry: o.geometry,
-            properties: replaceAliases(trimHeaders(o.properties, headers))
+            properties: renameKeys(replaceAliases(trimHeaders(o.properties, headerKeys)), headers)
         }
     });
 
@@ -48,6 +60,7 @@ function replaceAliases(d) {
 
 function jsonToCSV(data, headers) {
 
+    let headerKeys = Object.keys(headers)
     return Papa.unparse(
         //   Add lat/lng
         data.map((d) => {
@@ -65,7 +78,7 @@ function jsonToCSV(data, headers) {
             }
 
             // Trim to the right columns
-            return replaceAliases(trimHeaders(out, headers));
+            return renameKeys(replaceAliases(trimHeaders(out, headerKeys)), headers);
         })
     );
 }

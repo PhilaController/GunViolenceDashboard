@@ -83,6 +83,7 @@
 
 <script>
 import { downloadFile, jsonToCSV, jsonToGeoJson } from "@/tools";
+import { OUTPUT_COLUMNS } from "@/data-dict";
 
 export default {
   props: ["data", "filteredData", "aggLayers", "selectedYear"],
@@ -94,26 +95,7 @@ export default {
       selectionGroups: ["Current Selection", `All ${this.selectedYear} Data`],
       formatRadio: 0,
       formatGroups: ["CSV", "GeoJSON"],
-      columnHeaders: [
-        "dc_key",
-        "race",
-        "sex",
-        "age",
-        "latino",
-        "fatal",
-        "date",
-        "block_number",
-        "street_name",
-        "has_court_case",
-        "zip",
-        "council",
-        "police",
-        "hood",
-        "school",
-        "house_district",
-        "lat",
-        "lng",
-      ],
+      columnHeaders: OUTPUT_COLUMNS,
       selectedAgg: null,
     };
   },

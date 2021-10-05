@@ -457,7 +457,7 @@
 <script>
 // Internal
 import { formatDate, msToTimeString, dateFromDay, toItemsArray } from "@/tools";
-import { ALIASES, CATEGORIES } from "@/data-dict";
+import { ALIASES } from "@/data-dict";
 import SliderHistogramChart from "./SliderHistogramChart";
 import DownloadButton from "./DownloadButton";
 
