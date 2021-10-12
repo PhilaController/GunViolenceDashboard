@@ -52,8 +52,6 @@ getRouter().then(router => {
   }).$mount('#app')
 })
 
-
-
 // Turn off FA
 $(document).ready(function () {
   window.FontAwesome.config.observeMutations = false;
