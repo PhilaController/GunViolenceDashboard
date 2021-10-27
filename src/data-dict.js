@@ -40,7 +40,7 @@ const CATEGORIES = {
 
 // Display aliases for dimensions
 const ALIASES = {
-    fatal: { 1: "Fatal", 0: "Nonfatal" },
+    fatal: { 1: "Fatal", 0: "Nonfatal", true: "Fatal", false: "Nonfatal" },
     has_court_case: { true: "Yes", false: "No" },
     weekday: {
         0: "Sunday",
