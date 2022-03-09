@@ -12,6 +12,7 @@
             dark
             small
             outlined
+            :ripple="false"
             title="Click for more information"
             @click="$router.push('/about')"
           >
@@ -23,6 +24,7 @@
             depressed
             outlined
             dark
+            :ripple="false"
             @click="$router.push(`/${selectedYear}`)"
           >
             <i class="fas fa-arrow-left mr-1"></i>
@@ -49,6 +51,10 @@
                 flat
                 color="#666"
                 :ripple="false"
+                :menu-props="{
+                  auto: true,
+                  'min-width': '90px',
+                }"
                 @change="handleYearSelection"
               />
             </div>
@@ -137,20 +143,27 @@ export default {
   background-color: transparent !important;
   border-width: 0px !important;
 }
+
+#year-select {
+  width: 0 !important;
+  min-width: 0 !important;
+}
+
 #year-select-wrapper {
-  width: 77px !important;
   margin-left: 0.5rem;
   margin-top: 5px;
 }
 #year-select-wrapper .v-select__selection {
   font-size: 1.2rem !important;
   margin-bottom: 5px !important;
+  overflow: visible !important;
 }
 
 .v-list-item__title {
   font-size: 1rem !important;
   line-height: 1.6rem !important;
   font-weight: normal !important;
+  overflow: visible !important;
 }
 
 /* App-wide settings */

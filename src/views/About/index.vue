@@ -1,7 +1,7 @@
 <template>
   <div class="container about-page">
     <!-- Data Sources -->
-    <div class="data-section">
+    <div class="data-section section">
       <h2>Data</h2>
 
       <!-- Disclaimer -->
@@ -44,8 +44,8 @@
     </div>
 
     <!-- Methods -->
-    <div class="methods-section">
-      <h2 class="mt-5">Methods</h2>
+    <div class="methods-section section">
+      <h2>Methods</h2>
       <p>
         The data for shooting victims in this application is automatically
         updated daily. As noted on Open Data Philly's
@@ -118,8 +118,8 @@
     </div>
 
     <!-- Feedback -->
-    <div class="feedback-section">
-      <h2 class="mt-5">Application Feedback</h2>
+    <div class="feedback-section section">
+      <h2>Application Feedback</h2>
       <p>
         If you've noticed a bug in this application or have suggestions for how
         to make it better, please send an email to
@@ -174,6 +174,9 @@ export default {
 </script>
 
 <style>
+.section {
+  margin-top: 40px;
+}
 .url-break {
   word-wrap: break-word;
 }
