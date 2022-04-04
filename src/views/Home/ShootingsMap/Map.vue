@@ -59,6 +59,8 @@ import { interpolatePlasma, interpolateReds } from "d3-scale-chromatic";
 // Import esri-leaflet too
 const esri = require("esri-leaflet");
 
+require("leaflet-easyprint");
+
 // Define the scale we want to use
 const SCALE = interpolatePlasma;
 
@@ -262,15 +264,29 @@ export default {
         .addTo(map);
 
       // add a home button to the control bar
-      let button =
+      let zoomButton =
         $(`<a class="leaflet-control-zoom-in" title="Recenter Map" role="button" aria-label="Recenter Map">
         <i class="fa fa-home" aria-hidden="true"></i>
         </a>`);
-      button.on("click", this.zoomHome);
-      $("#shootingsMapContainer .leaflet-control-zoom").append(button);
+      zoomButton.on("click", this.zoomHome);
+      $("#shootingsMapContainer .leaflet-control-zoom").append(zoomButton);
+
+      // Print
+      let printButton =
+        $(`<a class="leaflet-control-zoom-in" title="Save current map as PNG" role="button" aria-label="Save current map as PNG">
+        <i class="fas fa-save fa-sm" aria-hidden="true"></i>
+        </a>`);
+      printButton.on("click", this.printMap);
+      $("#shootingsMapContainer .leaflet-control-zoom").append(printButton);
 
       // convert to svg
       if (window.FontAwesome) window.FontAwesome.dom.i2svg();
+
+      // Add the printer plugin
+      this.printPlugin = L.easyPrint({
+        hidden: true,
+        exportOnly: true,
+      }).addTo(map);
 
       // Add ArcGIS Online basemap
       esri
@@ -357,6 +373,9 @@ export default {
     },
   },
   methods: {
+    printMap() {
+      this.printPlugin.printMap("CurrentSize", "Gun-Violence-Dashboard");
+    },
     updateAggLayer() {
       // If we have an agg layer, update the colors
       // Update style

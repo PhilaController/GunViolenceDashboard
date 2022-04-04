@@ -19,6 +19,7 @@
         "d3-time-format": "^3.0.0",
         "esri-leaflet": "^2.5.2",
         "leaflet": "^1.7.1",
+        "leaflet-easyprint": "^2.1.9",
         "leaflet.heat": "^0.2.0",
         "papaparse": "^5.3.1",
         "vue": "^2.6.11",
