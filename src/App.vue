@@ -2,64 +2,13 @@
   <div data-vuetify>
     <v-app class="dark-app-theme" id="app">
       <v-main>
-        <!-- Top app navbar -->
-        <div id="my-app-navbar">
-          <!-- Methods link -->
-          <v-btn
-            class="back-to-app mr-3 mt-2"
-            v-show="$router.currentRoute.path != '/about'"
-            fab
-            dark
-            small
-            outlined
-            :ripple="false"
-            title="Click for more information"
-            @click="$router.push('/about')"
-          >
-            <i class="fas fa-info fa-lg"></i>
-          </v-btn>
-          <v-btn
-            class="back-to-app mr-3 mt-2"
-            v-show="$router.currentRoute.path == '/about'"
-            depressed
-            outlined
-            dark
-            :ripple="false"
-            @click="$router.push(`/${selectedYear}`)"
-          >
-            <i class="fas fa-arrow-left mr-1"></i>
-            <span>Back</span>
-          </v-btn>
+        <!-- Overlay a lodader -->
+        <v-overlay :value="isLoading" opacity="1" color="#353d42">
+          <v-progress-circular indeterminate size="64" color="#fff" />
+        </v-overlay>
 
-          <!-- Year dropdown -->
-          <div
-            class="year-message-content"
-            v-if="
-              (dataYears !== null) & ($router.currentRoute.path != '/about')
-            "
-          >
-            <div>Viewing data for</div>
-            <div id="year-select-wrapper">
-              <v-select
-                id="year-select"
-                v-model="selectedYear"
-                :items="dataYears"
-                label=""
-                dark
-                dense
-                hide-details
-                flat
-                color="#666"
-                :ripple="false"
-                :menu-props="{
-                  auto: true,
-                  'min-width': '90px',
-                }"
-                @change="handleYearSelection"
-              />
-            </div>
-          </div>
-        </div>
+        <!-- Top app navbar -->
+        <Navbar :dataYears="dataYears" />
 
         <!-- Content -->
         <router-view :key="$route.path" />
@@ -69,32 +18,26 @@
 </template>
 
 <script>
-import { githubFetch } from "@/tools";
+import Navbar from "@/components/Navbar";
 
 export default {
   name: "App",
+  components: {
+    Navbar,
+  },
   data() {
     return {
       minYear: 2015,
       currentYear: new Date().getFullYear(),
-      dataYears: null,
-      selectedYear: null,
     };
   },
-  async created() {
-    // Fetch the data years
-    this.dataYears = await githubFetch("data_years.json");
 
-    // Set the selected year
-    let selectedYear = this.$router.currentRoute.params.selectedYear;
-    if (!selectedYear) selectedYear = this.dataYears[0];
-    this.selectedYear = parseInt(selectedYear);
-  },
-  methods: {
-    handleYearSelection(year) {
-      // Change the route if the selected year is different
-      let currentYear = parseInt(this.$router.currentRoute.params.selectedYear);
-      if (year !== currentYear) this.$router.push(`/${year}`);
+  computed: {
+    isLoading() {
+      return !this.$store.state.ready;
+    },
+    dataYears() {
+      return this.$store.state.dataYears;
     },
   },
 };

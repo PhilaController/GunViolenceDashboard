@@ -1,4 +1,4 @@
-import { timeParse } from "d3-time-format";
+import { timeParse, timeFormat } from "d3-time-format";
 import * as Papa from "papaparse"
 import { ALIASES } from "@/data-dict"
 
@@ -114,6 +114,19 @@ async function githubFetch(filename) {
     }
 }
 
+async function AWSFetch(filename) {
+    /* Fetch data from AWS s3 */
+
+    let url = "https://gun-violence-dashboard.s3.amazonaws.com/"
+    try {
+        const response = await fetch(url + filename);
+        let data = await response.json();
+        return data
+    } catch (e) {
+        console.error(e);
+    }
+}
+
 function dateFromDay(year, day) {
     /* Returns a date object from a year and day of the year. */
     let date = new Date(year, 0); // initialize a date in `year-01-01`
@@ -165,7 +178,15 @@ function msToTimeString(ms) {
 }
 const parseTime = timeParse("%Y/%m/%d %H:%M:%S");
 
+function timestampToTimeString(ts, pattern = "%B %d") {
+    const dt = new Date(ts);
+    const formatTime = timeFormat(pattern);
+    return formatTime(dt);
+
+}
+
 export {
+    timestampToTimeString,
     dateFromDay,
     formatDate,
     getDayOfYear,
@@ -177,5 +198,6 @@ export {
     downloadFile,
     jsonToCSV,
     jsonToGeoJson,
-    toItemsArray
+    toItemsArray,
+    AWSFetch
 };

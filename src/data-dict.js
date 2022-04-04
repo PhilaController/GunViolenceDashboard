@@ -1,6 +1,6 @@
 
 // Dimensions of data that be filtered
-const DIMS = ["date", "time", "fatal", "race", "age", "sex", "has_court_case", "weekday"]
+const DIMS = ["year", "date", "time", "fatal", "race", "age", "sex", "has_court_case", "weekday"]
 
 // Output
 const OUTPUT_COLUMNS = {

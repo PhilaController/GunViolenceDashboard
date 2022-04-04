@@ -6,6 +6,7 @@ import $ from 'jquery'
 import App from '@/App'
 import { getRouter } from "@/plugins/router";
 import vuetify from '@/plugins/vuetify' // path to vuetify export
+import store from "@/plugins/store";
 
 // Leaflet
 import { Icon } from "leaflet";
@@ -33,7 +34,7 @@ audit_content.html(`
 </a>
 <p class='help-message mb-5'>
   Comments or feedback? Please contact
-  <a href="mailto:controller.policy@phila.gov">controller.policy@phila.gov</a>.
+  <a href="mailto:controller@phila.gov">controller@phila.gov</a>.
   </p>
 </div>`
 );
@@ -48,6 +49,7 @@ getRouter().then(router => {
   new Vue({
     router,
     vuetify,
+    store,
     render: h => h(App)
   }).$mount('#app')
 })
