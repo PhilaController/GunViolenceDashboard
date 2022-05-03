@@ -539,9 +539,10 @@ export default {
           showHistogram: true,
           autoLimits: true,
           tooltip: {
-            formatter(ts) {
-              return timestampToTimeString(ts, "%b %-d");
-            },
+            formatter: (ts) =>
+              this.selectedYear === null
+                ? timestampToTimeString(ts, "%-m/%-d/%y")
+                : timestampToTimeString(ts, "%b %-d"),
           },
         },
         {
@@ -579,7 +580,6 @@ export default {
     /* When the route changes, handle year selection */
     "$route.query.year": {
       handler(newYear) {
-        
         // Do nothing if we are coming from about page
         if (this.$route.path == "/about") return;
         if (this.prevRoute.path === "/about") return;
