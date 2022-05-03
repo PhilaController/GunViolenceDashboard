@@ -654,7 +654,7 @@ export default {
         d.properties["date"] = dt.getTime();
         d.properties["weekday"] = dt.getDay();
         d.properties["time"] = getMsSinceMidnight(dt);
-        d.properties["id"] = i;
+        d.properties["id"] = parseInt(`${year}${i}`);
       });
 
       return data;
