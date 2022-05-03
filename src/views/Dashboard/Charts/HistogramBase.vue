@@ -35,11 +35,63 @@
 // Internal
 import a11yTable from "@/components/a11yTable";
 import { format } from "d3-format";
-import { CATEGORIES, ALIASES } from "@/data-dict";
-
 // External
 import { rollup, sum } from "d3-array";
 import VueApexCharts from "vue-apexcharts";
+
+// Categories for specific dimensions
+const CATEGORIES = {
+  fatal: [true, false],
+  race: ["W", "B", "H", "A", "Other/Unknown"],
+  sex: ["M", "F"],
+  age_group: [
+    "Younger than 18",
+    "18 to 30",
+    "31 to 45",
+    "Older than 45",
+    "Unknown",
+  ],
+  has_court_case: [true, false],
+};
+
+// Display aliases for dimensions
+const ALIASES = {
+  fatal: { 1: "Fatal", 0: "Nonfatal", true: "Fatal", false: "Nonfatal" },
+  has_court_case: { true: "Yes", false: "No" },
+  weekday: {
+    0: "Sunday",
+    1: "Monday",
+    2: "Tuesday",
+    3: "Wednesday",
+    4: "Thursday",
+    5: "Friday",
+    6: "Saturday",
+  },
+  race: {
+    W: "White (Non-Hispanic)",
+    B: "Black (Non-Hispanic)",
+    H: "Hispanic (Black or White)",
+    A: "Asian",
+    "Other/Unknown": "Other/Unknown",
+  },
+  sex: {
+    M: "Male",
+    F: "Female",
+  },
+  layer: {
+    points: "Point locations",
+    heatmap: "Heat map",
+    streets: "Hot spots by street block",
+  },
+  aggLayer: {
+    council: "Council Districts",
+    police: "Police Districts",
+    zip: "ZIP Codes",
+    hood: "Neighborhoods",
+    school: "Elementary School Catchments",
+    house_district: "PA House Districts",
+  },
+};
 
 export default {
   props: ["data"],
