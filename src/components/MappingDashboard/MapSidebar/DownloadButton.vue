@@ -59,7 +59,7 @@
           <v-select
             id="aggregate-select"
             class="mb-5"
-            :items="aggLayerItems"
+            :items="overlayLayerNames"
             label="Aggregate By (Optional)"
             clearable
             v-model="selectedAgg"
@@ -73,7 +73,12 @@
 
       <v-card-actions>
         <v-spacer></v-spacer>
-        <v-btn color="primary" :ripple="false" text @click="downloadData">
+        <v-btn
+          color="primary"
+          :ripple="false"
+          text
+          @click="handleDownloadClick"
+        >
           Download
         </v-btn>
       </v-card-actions>
@@ -82,20 +87,16 @@
 </template>
 
 <script>
-import { downloadFile, jsonToCSV, jsonToGeoJson } from "@/tools";
-import { OUTPUT_COLUMNS } from "@/data-dict";
-
 export default {
-  props: ["data", "filteredData", "aggLayers", "selectedYear"],
+  props: ["overlayLayerNames"],
   data() {
     return {
       expandedPanels: [],
       downloadDialog: false,
       selectionRadio: 0,
-      selectionGroups: ["Current Selection", `All ${this.selectedYear} Data`],
+      selectionGroups: ["Include Filters", "Ignore Filters"],
       formatRadio: 0,
       formatGroups: ["CSV", "GeoJSON"],
-      columnHeaders: OUTPUT_COLUMNS,
       selectedAgg: null,
     };
   },
@@ -118,36 +119,19 @@ export default {
     },
   },
   methods: {
-    downloadData() {
-      // Determine the content to download
-      let data = this.selectionRadio == 0 ? this.filteredData : this.data;
+    handleDownloadClick() {
+      // Emit event with the parameters
+      let params = {
+        aggLayer: this.selectedAgg,
+        ignoreFilters: this.selectionRadio == 1,
+        outputType: this.formatGroups[this.formatRadio],
+      };
 
-      //  Download specifics
-      let fileName, contentType, content;
+      console.log(params);
+      console.log(this.$emit);
+      this.$emit("download-data", params);
 
-      //   Emit the agg event and return
-      if (this.selectedAgg !== null) {
-        this.$emit("download-agg", this.selectedAgg, this.formatRadio, data);
-        this.downloadDialog = false;
-        return;
-      }
-
-      //   CSV
-      if (this.formatRadio === 0) {
-        content = jsonToCSV(data, this.columnHeaders);
-        fileName = `shooting-victims-data.csv`;
-        contentType = "text/plain";
-        // GeoJSON
-      } else {
-        content = jsonToGeoJson(data, this.columnHeaders);
-        fileName = `shooting-victims-data.geojson`;
-        contentType = "text/json";
-      }
-
-      // Download it
-      downloadFile(content, contentType, fileName);
-
-      // Reset and close the dialog
+      // Close the dialog
       this.downloadDialog = false;
     },
   },

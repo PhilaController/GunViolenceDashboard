@@ -1,469 +1,536 @@
 <template>
-  <div id="filterableMapContainer" style="position: relative">
-    <!-- <div class="legend-overlay-bar" v-if="showLegend()">
-      <div class="legend-flex-wrapper">
-        <Legend
-          :height="20"
-          :width="200"
-          :colorScheme="legendColorScale"
-          :range="legendRange"
-        />
+  <div class="filterable-map__container">
+    <!-- Container for map -->
+    <div id="map"></div>
+
+    <!-- Loading circle -->
+    <div class="map-overlay">
+      <div class="map-overlay__inner" v-if="dataLoading || showLoader_">
+        <v-progress-circular indeterminate size="32" color="#fff" />
       </div>
-    </div> -->
+    </div>
 
-    <!-- Leaflet Map -->
-    <l-map
-      :options="mapOptions"
-      :zoom="mapStartLocation.zoom"
-      :center="mapStartLocation.center"
-      ref="LeafletMap"
-      class="map-pane"
-    >
-      <!-- Overlay a loader -->
-      <v-overlay
-        :value="isLoading"
-        absolute
-        opacity="0.6"
-        color="#353d42"
-        :z-index="9999999"
-      >
-        <v-progress-circular indeterminate size="64" color="#fff" />
-      </v-overlay>
-
-      <!--  -->
-      <slot />
-    </l-map>
+    <!-- Map Legend -->
+    <MapLegend
+      :width="250"
+      :barHeight="15"
+      :tickSize="12"
+      tickFormat=",.0f"
+      ref="MapLegend"
+    />
   </div>
 </template>
 
 <script>
-// Local imports
-// import Legend from "./Legend";
-// import { msToTimeString } from "@/tools.js";
+import MapLegend from "./MapLegend";
+import maplibregl from "maplibre-gl";
+import { queryFeatureServer, queryFeatureServerBatch } from "@/utils/io";
+import { extent, rollup } from "d3-array";
 
-// Jquery
-import $ from "jquery";
+const d3Scale = require("d3-scale");
+const d3ScaleChromatic = require("d3-scale-chromatic");
 
-// Leaflet imports
-import L from "leaflet";
-import * as Vue2Leaflet from "vue2-leaflet";
-
-// d3 imports
-// import { min, max, rollup } from "d3-array";
-// import { scaleLog, scaleSequential } from "d3-scale";
-// import { interpolatePlasma, interpolateReds } from "d3-scale-chromatic";
-
-// Import esri-leaflet too
-const esri = require("esri-leaflet");
-
-// Define the scale we want to use
-// const SCALE = interpolatePlasma;
-
-// function styleFunction(feature) {
-//   let fillColor = feature.properties.fatal ? "#d84545" : "#e5dc8e";
-//   let edgeColor = feature.properties.fatal ? "#af2828" : "#d3c913";
-//   return {
-//     radius: 6,
-//     fillColor: fillColor,
-//     color: edgeColor,
-//     weight: 1,
-//     opacity: 1,
-//     fillOpacity: 0.7,
-//   };
-// }
+const TAG = " (User)";
 
 export default {
-  components: {
-    "l-map": Vue2Leaflet.LMap,
-  },
   props: {
-    features: Array,
-    mapStartLocation: {
-      type: Object,
-      default: () => {
-        return { zoom: 12, center: [39.9854507, -75.15] };
-      },
-    },
+    filteredData: Array,
+    aggregatedData: Object,
+    sources: Array,
+    layers: Array,
+    title: String,
     mapOptions: {
       type: Object,
       default: () => {
         return {
           maxZoom: 16,
-          minZoom: 11,
-          zoomControl: false,
-          scrollWheelZoom: false,
+          minZoom: 10,
+          zoom: 11,
+          center: [-75.15, 39.985],
         };
       },
     },
-    zoomControlLocation: {
-      type: String,
-      default: "topright",
-    },
-    addHomeButton: {
-      type: Boolean,
-      default: true,
-    },
-    basemapLayerName: {
-      type: String,
-      default: "DarkGray",
-    },
-    addCityLimits: {
-      type: Boolean,
-      default: true,
-    },
-    cityLimitsStyle: {
-      type: Object,
-      default: () => {
-        return { fill: false, color: "#fff", weight: 4 };
-      },
-    },
-
-    // aggregationColorScheme: {
-    //   type: Object,
-    //   default: interpolateReds,
-    // },
+    defaultOverlayOpacity: { type: Number, default: 50 },
   },
+  components: { MapLegend },
   data() {
     return {
-      isLoading: false,
-      // legendColorScale: interpolatePlasma,
-      // legendRange: [0.5, 1.0],
-      // streetsURL:
-      //   "https://services.arcgis.com/fLeGjb7u4uXqeF9q/arcgis/rest/services/Philadelphia_Streets/FeatureServer/0",
-      activeLayers: [],
-      selectedAggLayer: null,
-      homeBounds: null,
-      layers: {},
-      aggLayers: {},
-      panes: {},
-      // circle: { radius: 6, color: "#7ab5e5" },
+      mapLoaded: false, // Map loaded
+      dataLoading: false, // Is data loading?
+      showLoader_: false, // Force the loader to show
+      activeLayers: [], // Names of layers that are active on the map
+      showLegend_: false, // Whether to show the legend
+      sourcesCopy: [], // Copy of sources
     };
   },
-  computed: {
-    totalFeatures() {
-      return this.features.length;
-    },
+  created() {
+    // Store the map
+    this.map = null;
 
-    mapObject() {
-      return this.$refs.LeafletMap.mapObject;
-    },
-
-    // onEachFeatureFunction() {
-    //   return (feature, layer) => {
-    //     let aliases = {
-    //       W: "White (Non-Hispanic)",
-    //       B: "Black (Non-Hispanic)",
-    //       H: "Hispanic (Black or White)",
-    //       M: "Male",
-    //       F: "Female",
-    //       A: "Asian",
-    //     };
-    //     let data = feature.properties;
-    //     let fatal = data.fatal == 1 ? "Fatal" : "Nonfatal";
-    //     let text = `<div class="tooltip-title">${fatal} Shooting</div>
-    //                 <table class="w-100">
-    //                 <tbody>`;
-
-    //     text += ` <tr class="tooltip-line">
-    //                 <td>${data.date.toDateString()}</td>
-    //               </tr>`;
-    //     text += ` <tr class="tooltip-line">
-    //                 <td>${msToTimeString(data.time)}</td>
-    //               </tr>`;
-    //     text += ` <tr class="tooltip-line">
-    //               <td>${data.block_number} ${data.street_name}</td>
-    //             </tr>`;
-    //     text += `</tbody>
-    //             </table>`;
-
-    //     text += `<div class="tooltip-title mt-2">Victim Info</div>
-    //                 <table class="w-100">
-    //                 <tbody>`;
-
-    //     text += ` <tr class="tooltip-line">
-    //             <td>${data.age} years old</td>
-    //             </tr>`;
-    //     text += ` <tr class="tooltip-line">
-    //             <td>${aliases[data.race]}</td>
-    //             </tr>`;
-    //     text += ` <tr class="tooltip-line">
-    //         <td>${aliases[data.sex]}</td>
-    //         </tr>`;
-    //     text += `</tbody>
-    //             </table>`;
-    //     text += `<div class="tooltip-title mt-2">Incident Info</div>
-    //               <table class="w-100">
-    //               <tbody>`;
-
-    //     text += ` <tr class="tooltip-line">
-    //         <td>DC #: ${data.dc_key}</td>
-    //         </tr>`;
-    //     let arrest = data.has_court_case ? "Yes" : "No";
-    //     text += ` <tr class="tooltip-line">
-    //         <td>Court Case: ${arrest}</td>
-    //         </tr>`;
-
-    //     text += `</tbody>
-    //             </table>`;
-
-    //     // bind the popup to the layer
-    //     layer.bindTooltip(text, {
-    //       permanent: false,
-    //       sticky: true,
-    //       opacity: 1.0,
-    //     });
-    //   };
-    // },
+    // Set sources copy
+    this.sourcesCopy = [];
+    for (let i = 0; i < this.sources.length; i++) {
+      this.sourcesCopy.push(Object.assign({}, this.sources[i]));
+    }
   },
+
+  /*------ 
+  When mounted, initialize the map
+  -------*/
   mounted() {
-    this.$nextTick(() => {
-      // the leaflet basemap
-      let map = this.mapObject;
+    // the map container
+    let mapContainer = document.getElementById("map");
 
-      //Add zoom control with your options
-      if (this.zoomControlLocation) {
-        L.control
-          .zoom({
-            position: this.zoomControlLocation,
-          })
-          .addTo(map);
-      }
+    //  Add the map if the container exists
+    if (mapContainer !== null) {
+      // Create the map
+      let map = new maplibregl.Map({
+        container: mapContainer,
+        style: require("@/data/style.json"),
+        center: this.mapOptions.center,
+        zoom: this.mapOptions.zoom,
+        maxZoom: this.mapOptions.maxZoom,
+        minZoom: this.mapOptions.minZoom,
+      });
 
-      // Add a home button
-      if (this.addHomeButton) {
-        // Set zoom home bounds
-        this.homeBounds = map.getBounds();
+      // Add control
+      let nav = new maplibregl.NavigationControl({ showCompass: false });
+      map.addControl(nav, "top-right");
 
-        // Add a home button to the control bar
-        let button =
-          $(`<a class="leaflet-control-zoom-in" title="Recenter Map" role="button" aria-label="Recenter Map">
-        <i class="fa fa-home" aria-hidden="true"></i>
-        </a>`);
-        button.on("click", this.zoomHome);
-        $("#LeafletMapObjectContainer .leaflet-control-zoom").append(button);
+      // Add initial layers & sources
+      map.on("load", async () => {
+        // Loop over default layers
+        for (let layerName of this.layerNamesDefault) {
+          this.setActiveLayers(layerName, true);
+        }
+        // Ready for first time
+        if (!this.mapLoaded) {
+          this.mapLoaded = true;
+          this.$emit("map:ready");
+        }
+      });
 
-        // Convert to svg
-        if (window.FontAwesome) window.FontAwesome.dom.i2svg();
-      }
+      // Show spinner when data is loading
+      map.on("dataloading", () => {
+        this.dataLoading = true;
+      });
 
-      // Add ArcGIS Online basemap
-      esri
-        .basemapLayer(this.basemapLayerName, {
-          detectRetina: false,
-        })
-        .addTo(map);
+      // When data is idle, data loading is done
+      map.on("idle", () => {
+        this.dataLoading = false;
+      });
 
-      // Add city limits
-      if (this.addCityLimits) {
-        this.layers.cityLimits = esri
-          .featureLayer({
-            url: "https://services.arcgis.com/fLeGjb7u4uXqeF9q/arcgis/rest/services/City_Limits/FeatureServer/0",
-            style: () => {
-              return this.cityLimitsStyle;
-            },
-          })
-          .addTo(map);
-      }
-
-      // Create and layer the panes
-      map.getPane("overlayPane").style.zIndex = 1400;
-
-      this.panes.geojson = map.createPane("geojson");
-      this.panes.geojson.style.zIndex = 1200;
-
-      this.panes.heatmap = map.createPane("heatmap");
-      this.panes.heatmap.style.zIndex = 500;
-      this.panes.heatmap.style.pointerEvents = "none";
-
-      this.panes.aggLayers = map.createPane("aggLayers");
-      this.panes.aggLayers.style.zIndex = 300;
-
-      //  change stroke weight on zoom
-      // map.on("zoomend", () => {
-      //   if (this.isActive("streets")) {
-      //     this.layers.streets.setStyle(this.streetStyleFunction);
-      //   }
-      // });
-    });
+      // Save it
+      this.map = map;
+    }
   },
-  watch: {
-    /* Agg layer opacity */
-    aggregationLayerOpacity() {
-      this.updateAggLayer();
-    },
-    /* Watch length of GeoJSON data */
-    totalFeatures() {
-      this.updateAggLayer();
-    },
-    /* Watch the current agg layer */
-    aggLayer(nextValue, prevValue) {
-      let map = this.mapObject;
 
-      // Remove old layer
-      if (prevValue != null) map.removeLayer(this.layers[prevValue]);
-
-      // Add new layer
-      if (nextValue != null) {
-        this.addAggLayer(nextValue);
-        this.updateAggLayer();
-      }
-    },
-    activeLayers() {
-      let map = this.mapObject;
-
-      // Remove heatmap
-      if (!this.isActive("heatmap") & map.hasLayer(this.layers.heatmap))
-        map.removeLayer(this.layers.heatmap);
-
-      // Remove streets
-      if (!this.isActive("streets") & map.hasLayer(this.layers.streets))
-        map.removeLayer(this.layers.streets);
-
-      // Add heatmap
-      if (this.isActive("heatmap") & !map.hasLayer(this.layers.heatmap))
-        this.addHeatmap();
-
-      // Add streets
-      if (this.isActive("streets") & !map.hasLayer(this.layers.streets))
-        this.addStreetHotSpots();
-    },
-    features() {
-      // Add the heatmap
-      if (this.isActive("heatmap")) this.addHeatmap();
-
-      // Add the streets hotspots
-      if (this.isActive("streets")) this.addStreetHotSpots();
+  computed: {
+    /*------ 
+    The default layers
+    -------*/
+    layerNamesDefault() {
+      return this.layers.filter((l) => l.showOnStart).map((l) => l.name);
     },
   },
+
   methods: {
-    addLayer(layer, aggregated = false) {
-      // Save the layer locally
-      if (!aggregated) this.layers[layer.name] = layer;
-      else this.aggLayers[layer.name] = layer;
-
-      // Add to the dashboard too
-      this.$parent.addLayer(layer, aggregated);
+    /*------ 
+     Add/remove an active layer 
+    -------*/
+    addActiveLayer(layerName) {
+      if (!this.activeLayers.includes(layerName))
+        this.activeLayers.push(layerName);
     },
-    updateAggLayer() {
-      // If we have an agg layer, update the colors
-      // Update style
-      let aggLayer = this.layers[this.aggLayer];
-      if (aggLayer) {
-        aggLayer.setStyle(this.aggStyleFunction);
+    removeActiveLayer(layerName) {
+      let index = this.activeLayers.findIndex((name) => name === layerName);
+      if (index === -1)
+        throw Error(`Active layer ${layerName} not found when removing`);
+      this.activeLayers.splice(index, 1);
+    },
 
-        // Update tooltip
-        aggLayer.eachFeature((layer) => {
-          layer.bindTooltip(this.getAggTooltip(layer.feature), {
-            permanent: false,
-            sticky: true,
-            opacity: 1.0,
-          });
+    /*------ 
+     Show the specified layer on the map
+    -------*/
+    showLayer(map, layerName) {
+      if (map.getLayer(layerName + TAG))
+        map.setLayoutProperty(layerName + TAG, "visibility", "visible");
+      else
+        throw Error(`Cannot show layer '${layerName}'; layer does not exist`);
+    },
+
+    /*------ 
+     Hide the specified layer on the map
+    -------*/
+    hideLayer(map, layerName) {
+      if (map.getLayer(layerName + TAG))
+        map.setLayoutProperty(layerName + TAG, "visibility", "none");
+      else
+        throw Error(`Cannot show layer '${layerName}'; layer does not exist`);
+    },
+
+    /*------ 
+    Update the data for an aggregated data source
+    -------*/
+    updateAggregatedSource(layer) {
+      // Aggregate the data
+      let aggData = rollup(
+        this.filteredData.filter((d) => d.properties[layer.column]),
+        (v) => v.length,
+        (d) => d.properties[layer.column]
+      );
+
+      // Get the source
+      let source = this.sourcesCopy.find((d) => d.name == layer.source);
+
+      // Get the legend info
+      let legend = layer.legend || {};
+
+      // The color scheme
+      let colorScheme = legend.colorScheme || "Reds";
+      let colorScale = d3ScaleChromatic[`interpolate${colorScheme}`];
+
+      // Range
+      let range = legend.colorRange || [0, 1];
+      let domain = extent(aggData, (d) => d[1]);
+
+      // Type of scale
+      let scaleName = legend.scaleName || "Sequential";
+
+      // Check the scale
+      if (d3Scale[`scale${scaleName}`] === undefined)
+        throw Error(`Scale ${scaleName} does not exist`);
+      let scale = d3Scale[`scale${scaleName}`]().domain(domain).range(range);
+
+      // Update the legend
+      this.$refs.MapLegend.show({
+        colorScheme,
+        range,
+        domain,
+        title: this.title,
+      });
+
+      // Function that returns the color
+      const getColor = (value) => colorScale(scale(value));
+
+      // Loop over each source feature
+      for (let i = 0; i < source.data.features.length; i++) {
+        // The feature
+        let feature = source.data.features[i];
+
+        // The value of the geoid column
+        let id = feature.properties[layer.geoid];
+
+        // Get the count and colr
+        let count = aggData.get(id) || 0;
+        let color = getColor(count);
+
+        // Update the data
+        feature.properties["color"] = color;
+        feature.properties["count"] = count;
+      }
+
+      // Update the map's data source
+      this.map.getSource(layer.source + TAG).setData(source.data);
+    },
+
+    /*------ 
+    Query the data source
+    -------*/
+    async queryDataSource(source) {
+      let batch_size = source.batch_size;
+      let data;
+
+      // Single query
+      if (batch_size === undefined) {
+        data = await queryFeatureServer({
+          url: source.url,
+          outFields: source.outFields,
+          where: source.where,
+          geometryPrecision: source.geometryPrecision,
         });
       }
+      // Multiple queries
+      else {
+        let where_key = source.whereColumn;
+        if (where_key === undefined)
+          throw Error("Please define 'whereColumn' if batch mode enabled");
+
+        // The corresponding values
+        let values = Array.from(
+          new Set(
+            this.filteredData
+              .map((d) => d.properties[where_key])
+              .filter((d) => d)
+          )
+        );
+
+        // Return the query
+        data = await queryFeatureServerBatch({
+          url: source.url,
+          where_key: where_key,
+          where_value: values,
+          outFields: source.outFields,
+          geometryPrecision: source.geometryPrecision,
+          batch_size: batch_size,
+        });
+      }
+
+      // Format
+      if (source.formatter) {
+        for (let i = 0; i < data.features.length; i++) {
+          for (let key in source.formatter) {
+            let val = data.features[i].properties[key];
+            data.features[i].properties[key] = source.formatter[key](val);
+          }
+        }
+      }
+
+      return data;
     },
 
-    showLegend() {
-      return this.isActive("streets") | (this.aggLayer !== null);
-    },
-    isActive(layer) {
-      return this.activeLayers.indexOf(layer) !== -1;
+    /*------ 
+     Update data source and clear filters on related layers
+    -------*/
+    updateDataSource(sourceName, data) {
+      if (this.map.getSource(sourceName + TAG))
+        this.map.getSource(sourceName + TAG).setData(data);
+
+      // Clear any filters on layers with this source
+      for (let i = 0; i < this.layers.length; i++) {
+        let layer = this.layers[i];
+        if (layer.source === sourceName && this.map.getLayer(layer.name + TAG))
+          this.setFilter(layer.name, true);
+      }
     },
 
-    // getWeightBasedOnZoom() {
-    //   let currentZoom = this.mapObject.getZoom();
-    //   if (currentZoom > 13) return 5;
-    //   else if (currentZoom > 12) return 3;
-    //   else return 2;
-    // },
+    /*------ 
+     Async function to add layer (and source if needed) to the map
+    -------*/
+    async addLayer(map, layer) {
+      // Show the loader
+      this.showLoader();
 
-    setActiveLayers(layerName, active) {
-      let layer = this.layers[layerName];
-      if (active) layer.add(this.mapObject);
-      else layer.remove(this.mapObject);
+      // Find the source
+      let source = this.sourcesCopy.find((d) => d.name == layer.source);
+      if (source === undefined)
+        throw Error(`Cannot find source with name '${layer.source}'`);
+
+      // Add the source if we need to
+      if (!map.getSource(source.name + TAG)) {
+        // Do we need to query the data?
+        if (source.url) {
+          source.data = await this.queryDataSource(source);
+        }
+
+        // Make sure we have data
+        if (source.data === undefined)
+          throw Error(`No data for source '${source.name}'`);
+
+        // Add the source to the map
+        map.addSource(source.name + TAG, {
+          type: "geojson",
+          data: source.data,
+        });
+      }
+
+      // Make sure paint is correct
+      let paint = layer.paint;
+      if (paint === undefined) paint = {};
+
+      // Add the color styling
+      if (layer.aggregated) {
+        paint = { ...paint };
+        paint[`${layer.type}-color`] = ["get", "color"];
+      }
+
+      // Opacity for overlays
+      if (layer.overlay) {
+        paint["fill-opacity"] = this.defaultOverlayOpacity / 100;
+      }
+
+      // Add the layer too
+      map.addLayer({
+        id: layer.name + TAG,
+        type: layer.type,
+        source: layer.source + TAG,
+        layout: {},
+        paint: paint,
+      });
+
+      // Add a popup
+      if (layer.tooltip) {
+        if (layer.tooltip.formatter) {
+          // Initialize the popup
+          let popup = new maplibregl.Popup({
+            closeButton: false,
+            closeOnClick: false,
+          });
+
+          let on = layer.tooltip.on || "mouseenter";
+          if (on === "mouseenter") {
+            map.on("mouseenter", layer.name + TAG, (e) => {
+              // Change the cursor style as a UI indicator.
+              map.getCanvas().style.cursor = "pointer";
+
+              // Add popup
+              popup
+                .setLngLat(e.lngLat)
+                .setHTML(layer.tooltip.formatter(e.features[0].properties))
+                .addTo(map);
+            });
+
+            // Remove it
+            map.on("mouseleave", layer.name + TAG, () => {
+              map.getCanvas().style.cursor = "";
+              popup.remove();
+            });
+          } else if (on === "mousemove") {
+            map.on("mousemove", layer.name + TAG, (e) => {
+              // Add popup
+              popup
+                .setLngLat(e.lngLat)
+                .setHTML(layer.tooltip.formatter(e.features[0].properties))
+                .addTo(map);
+            });
+
+            // Remove it
+            map.on("mouseleave", layer.name + TAG, () => {
+              popup.remove();
+            });
+          } else
+            throw Error(
+              "Unsupported tooltip 'on'; should be 'mouseenter' or 'mousemove'"
+            );
+        }
+      }
+
+      // Hide the loader
+      this.hideLoader(layer.name);
     },
-    setAggregationLayer(layerName, active) {
-      let layer = this.aggLayers[layerName];
-      if (active) layer.add(this.mapObject);
-      else layer.remove(this.mapObject);
+
+    /*------ 
+     Force the loader to show/hide
+    -------*/
+    showLoader() {
+      this.showLoader_ = true;
     },
-    zoomHome() {
-      this.mapObject.flyToBounds(this.homeBounds);
+    hideLoader() {
+      this.showLoader_ = false;
+    },
+
+    /*------ 
+     Set the specified paint property on the map
+    -------*/
+    setPaintProperty(name, key, value) {
+      if (this.map) this.map.setPaintProperty(name + TAG, key, value);
+    },
+
+    /*------ 
+     Set the specified filter on the map
+    -------*/
+    setFilter(name, value) {
+      if (this.map) this.map.setFilter(name + TAG, value);
+    },
+
+    removeLayer(name) {
+      if (this.map) this.map.removeLayer(name + TAG);
+    },
+
+    getLayer(name) {
+      if (this.map) return this.map.getLayer(name + TAG);
+    },
+
+    /*------ 
+     Set the active layers on the map
+    -------*/
+    async setActiveLayers(layerName, show) {
+      // The layer and source configs
+      let layer = this.layers.find((l) => l.name == layerName);
+      let source = this.sourcesCopy.find((d) => d.name == layer.source);
+
+      // Remove from map
+      if (show) {
+        // Where column
+        if (source.whereColumn && source.data) {
+          let existingValues = new Set(
+            source.data.features.map((d) => d.properties[source.whereColumn])
+          );
+          let newValues = new Set(
+            this.filteredData.map((d) => d.properties[source.whereColumn])
+          );
+
+          // Take difference
+          let missing = new Set(
+            [...newValues].filter((x) => !existingValues.has(x))
+          );
+
+          if (missing.size > 0) {
+            this.map.removeLayer(layerName + TAG);
+            this.map.removeSource(layer.source + TAG);
+          }
+        }
+
+        // Add it to map, or just show it
+        if (this.map.getLayer(layerName + TAG)) {
+          this.showLayer(this.map, layerName);
+        } else {
+          await this.addLayer(this.map, layer);
+        }
+
+        // Update the source if aggregated
+        if (layer.aggregated) {
+          this.updateAggregatedSource(layer);
+        }
+
+        // Track it
+        this.addActiveLayer(layerName);
+
+        // Remove this layer
+      } else {
+        // Hide the layer
+        if (this.map.getLayer(layerName + TAG))
+          this.hideLayer(this.map, layerName);
+
+        // Hide the legend
+        if (layer.aggregated) this.$refs.MapLegend.hide();
+
+        // Track it
+        this.removeActiveLayer(layerName);
+      }
     },
   },
 };
 </script>
 
 <style>
-#filterableMapContainer {
+@import "~maplibre-gl/dist/maplibre-gl.css";
+
+.filterable-map__container {
   flex: 1 1;
   display: flex;
-}
-.map-pane {
-  flex: 1;
-  height: 800px !important;
-  z-index: 1 !important;
+  position: relative;
 }
 
-@media only screen and (max-width: 767px) {
-  .map-pane {
-    height: 500px !important;
-  }
-}
-/* Zoom control */
-.fa-home {
-  color: #000;
-}
-
-.leaflet-control-zoom-in,
-.leaflet-control-zoom-out {
-  color: #000 !important;
-}
-
-/* tooltip */
-.tooltip-line {
-  border-bottom: 1px solid #f0f0f0;
-}
-.tooltip-line td {
-  padding: 0 7px 0 7px;
-  text-align: center;
-}
-.tooltip-line-header {
-  font-weight: bold;
-  text-align: left;
-}
-.leaflet-tooltip {
-  padding: 10px;
-  font: 1rem sans-serif;
-  background: #ffffff;
-  border-radius: 8px;
-  pointer-events: none;
-  border: 1px solid #cdcdcd;
-  opacity: 1;
-  display: block;
-  max-width: 500px;
-}
-.tooltip-title {
-  margin-bottom: 5px;
-  border-bottom: 1px solid #cdcdcd;
-  text-align: center;
-  font-weight: bold;
-  padding-bottom: 5px;
-}
-.leaflet-tooltip-pane {
-  z-index: 1500 !important;
-}
-
-/* legend placement */
-.legend-flex-wrapper {
-  margin-right: 50px;
-  display: flex;
-  justify-content: flex-end;
-}
-.legend-overlay-bar {
-  z-index: 2;
+#map {
   position: absolute;
+  top: 0;
+  bottom: 0;
   width: 100%;
-  pointer-events: none;
+}
+
+.map-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  text-align: right;
+  padding-top: 100px !important;
+}
+
+.map-overlay .map-overlay__inner {
+  padding: 10px;
+  margin-bottom: 10px;
 }
 </style>
 

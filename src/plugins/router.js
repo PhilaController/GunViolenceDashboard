@@ -1,29 +1,46 @@
 import Vue from "vue";
 import Router from "vue-router";
-import HomePage from "@/views/Home";
+import Dashboard from "@/views/Dashboard";
 import AboutPage from "@/views/About";
-import store from "@/plugins/store";
+import { githubFetch } from "@/utils/io"
 
 Vue.use(Router);
 
-async function getRouter() {
 
-    // Pull from Github
-    const data = await store.dispatch("fetchYears");
+export async function getRouter() {
 
+    // Pull data years from Github
+    const dataYears = await githubFetch("data_years.json");
+
+    // Return the router
     return new Router({
         routes: [
+            // About page
             {
                 path: "/about",
                 component: AboutPage,
-                props: { dataYears: data }
+                props: { dataYears: dataYears }
             },
+            // Dashboard page
             {
                 path: "/",
-                component: HomePage,
+                component: Dashboard,
+                props: { dataYears: dataYears }
             },
+            // Redirect to dashboard with query params
+            {
+                path: '/:selectedYear',
+                redirect: (to) => {
+                    let year;
+                    if (to.params.selectedYear == 'all')
+                        year = "All Years";
+                    else
+                        year = to.params.selectedYear
+
+                    return { path: '/', query: { year: year } }
+                },
+            },
+
         ],
     });
 }
-
-export { getRouter }

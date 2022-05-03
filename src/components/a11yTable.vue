@@ -28,7 +28,7 @@
 </template>
 
 <script>
-import { formatNumber } from "@/tools.js";
+import { format } from "d3-format";
 
 export default {
   name: "a11yTable",
@@ -36,7 +36,8 @@ export default {
   methods: {
     getValue(category) {
       let d = this.data.get(category) || 0;
-      return `${formatNumber(d)} (${((100 * d) / this.total).toFixed(0)}%)`;
+      let fmt = format(",.0f");
+      return `${fmt(d)} (${((100 * d) / this.total).toFixed(0)}%)`;
     },
     getAlias(value) {
       let out = this.aliases[value];

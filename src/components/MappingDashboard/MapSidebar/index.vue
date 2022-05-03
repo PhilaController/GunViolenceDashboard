@@ -1,51 +1,59 @@
 <template>
   <div class="filterable-map-sidebar">
     <!--------------------------------------->
-    <!-- TOP: Side bar header message -->
+    <!------------ Sidebar header ----------->
     <!--------------------------------------->
     <div class="sidebar-header">
+      <!-- Slot for the header -->
       <slot name="header">
-        <div class="data-size-message mt-3">
-          Showing locations for
-          <span style="color: #7ab5e5">{{ formatNumber(pointsOnMap) }}</span>
-          shooting victim<span v-if="pointsOnMap !== 1">s</span>
+        <!-- Data size message -->
+        <div id="data-size-section">
+          <div class="data-size-message mt-3">
+            Showing locations for
+            <span style="color: #7ab5e5">{{ formatNumber(pointsOnMap) }}</span>
+            shooting victim<span v-if="pointsOnMap !== 1">s</span>
+          </div>
+          <div class="sidebar-note" v-bind:class="{ hide: missingPoints == 0 }">
+            Note: {{ missingPoints }} victim<span v-if="missingPoints > 1"
+              >s</span
+            >
+            not shown due to missing locations
+          </div>
         </div>
-        <div class="sidebar-note" v-bind:class="{ hide: missingPoints == 0 }">
-          Note: {{ missingPoints }} victim<span v-if="missingPoints > 1"
-            >s</span
+
+        <!-- Download and reset button -->
+        <div
+          id="buttons-section"
+          class="
+            d-flex
+            justify-content-center
+            flex-column
+            align-items-center
+            mt-5
+          "
+        >
+          <!-- Download data -->
+          <DownloadButton
+            :overlayLayerNames="overlayLayerNames"
+            @download-data="$emit('download-data', $event)"
+          />
+
+          <!-- Reset all filters -->
+          <v-btn
+            id="reset-all-button"
+            class="ml-5 mr-5 mt-3 mb-5"
+            @click="resetAllFilters"
+            outlined
+            color="white"
+            :disabled="!showResetAllButton"
+            dark
+            :ripple="false"
           >
-          not shown due to missing locations
+            <i class="fas fa-undo"></i
+            ><span class="ml-3">Reset All Filters</span></v-btn
+          >
         </div>
       </slot>
-    </div>
-
-    <div
-      id="buttons-section"
-      class="d-flex justify-content-center flex-column align-items-center mt-5"
-    >
-      <!-- Download data -->
-      <!-- <DownloadButton
-        :data="data[selectedYear]"
-        :filteredData="filteredData"
-        :aggLayers="aliases['aggLayer']"
-        :selectedYear="selectedYear"
-        @download-agg="handleAggDownload"
-      /> -->
-
-      <!-- Reset all filters -->
-      <v-btn
-        id="reset-all-button"
-        class="ml-5 mr-5 mt-3 mb-5"
-        @click="resetAllFilters"
-        outlined
-        color="white"
-        :disabled="showResetAllButton"
-        dark
-        :ripple="false"
-      >
-        <i class="fas fa-undo"></i
-        ><span class="ml-3">Reset All Filters</span></v-btn
-      >
     </div>
 
     <!-- Scrollable content -->
@@ -54,74 +62,78 @@
       <!-- Map Layers ------------------------->
       <!--------------------------------------->
       <v-container id="map-layers-section">
-        <div class="text-center mt-3 sidebar-subtitle">Map Layers</div>
-        <v-divider class="my-divider" />
+        <div class="map-layers__inner" v-if="layerNames.length > 1">
+          <div class="text-center mt-3 sidebar-subtitle">Map Layers</div>
+          <v-divider class="my-divider" />
 
-        <!-- Checkboxes for layers -->
-        <v-hover v-for="layer in layers" :key="layer.name">
-          <v-checkbox
-            slot-scope="{ hover }"
-            :value="layer.name"
-            v-model="selectedLayers"
-            color="#7ab5e5"
-            hide-details
-            multiple
-            dark
-            dense
-            :ripple="false"
-            @click.native.capture="handleCheckboxClick"
-            :disabled="selectedAggLayer !== null"
-          >
-            <template v-slot:label>
-              <div>
-                {{ layer.label }}
-                <span
-                  v-if="hover"
-                  class="only-link"
-                  v-on:click.stop="handleOnlyClickLayer($event, layer.name)"
-                  >only</span
-                >
-              </div>
-            </template>
-          </v-checkbox>
-        </v-hover>
+          <!-- Checkboxes for layers -->
+          <v-hover v-for="layerName in layerNames" :key="layerName">
+            <v-checkbox
+              slot-scope="{ hover }"
+              :value="layerName"
+              v-model="selectedLayers"
+              color="#7ab5e5"
+              hide-details
+              multiple
+              dark
+              dense
+              :ripple="false"
+              @click.native.capture="handleCheckboxClick"
+              :disabled="selectedOverlay !== null"
+            >
+              <template v-slot:label>
+                <div>
+                  {{ layerName }}
+                  <span
+                    v-if="hover"
+                    class="only-link"
+                    v-on:click.stop="handleOnlyClickLayer($event, layerName)"
+                    >only</span
+                  >
+                </div>
+              </template>
+            </v-checkbox>
+          </v-hover>
+        </div>
 
         <!--------------------------------------->
         <!-- Aggregation Layers ----------------->
         <!--------------------------------------->
-        <div id="aggregate-select-wrapper">
-          <v-select
-            id="aggregate-select"
-            :items="aggLayerItems"
-            label="Aggregation Layer"
-            hint="Choose a geography to aggregate the data by"
-            persistent-hint
-            clearable
-            dark
-            :ripple="false"
-            v-model="selectedAggLayer"
-          />
-        </div>
+        <div class="map-layers__overlay" v-if="overlayLayerNames.length > 0">
+          <div id="aggregate-select-wrapper">
+            <v-select
+              id="aggregate-select"
+              :items="overlayLayerNames"
+              label="Aggregation Layer"
+              hint="Choose a geography to aggregate the data by"
+              persistent-hint
+              clearable
+              dark
+              :ripple="false"
+              v-model="selectedOverlay"
+            />
+          </div>
 
-        <!-- Opacity slider -->
-        <div class="d-flex flex-row align-items-center justify-content-start">
-          <v-subheader class="pl-0" id="opacityLabel">Opacity</v-subheader>
-          <vue-slider
-            class="opacity-slider"
-            :disabled="selectedAggLayer === null"
-            v-model="aggLayerOpacity"
-            :lazy="true"
-            :tooltip="'none'"
-            :enableCross="false"
-            @drag-end="
-              $emit('update:opacity', selectedAggLayer, aggLayerOpacity / 100)
-            "
-            width="50%"
-            :clickable="false"
-            :max="50"
-            :min="0"
-            aria-labelledby="opacityLabel"
-          />
+          <!-- Opacity slider -->
+          <div class="d-flex flex-row align-items-center justify-content-start">
+            <v-subheader class="pl-0" id="opacityLabel">Opacity</v-subheader>
+            <vue-slider
+              class="opacity-slider"
+              :disabled="selectedOverlay === null"
+              v-model="overlayOpacity"
+              :lazy="true"
+              :tooltip="'none'"
+              :enableCross="false"
+              @drag-end="
+                $emit('update:opacity', selectedOverlay, overlayOpacity / 100)
+              "
+              width="50%"
+              :clickable="false"
+              :max="50"
+              :min="0"
+              aria-labelledby="opacityLabel"
+            />
+          </div>
         </div>
       </v-container>
 
@@ -161,7 +173,7 @@
           </v-expansion-panel>
 
           <!--------------------------------------->
-          <!-- FILTER: Checkboxes ------->
+          <!-- FILTER: Checkboxes ----------------->
           <!--------------------------------------->
           <v-expansion-panel
             v-for="item in checkboxFilters"
@@ -171,7 +183,7 @@
             <v-expansion-panel-header
               ><div class="header-content">{{ item.label }}</div>
               <div
-                v-show="showReset(item.default, item.name)"
+                v-if="showReset(item.default, item.name)"
                 class="reset-link"
                 @click.capture="handleResetClick($event, item.name)"
               >
@@ -187,7 +199,7 @@
                   slot-scope="{ hover }"
                   :value="category.value"
                   v-model="selectedValues[item.name]"
-                  :style="getMinWidth(item.ncol || 1)"
+                  :style="getMinWidthForCheckboxFilter(item.ncol || 1)"
                   color="#7ab5e5"
                   hide-details
                   multiple
@@ -223,26 +235,28 @@
           >
             <v-expansion-panel-header
               ><div class="header-content">{{ item.label }}</div>
-              <!-- <div
-                v-if="showReset('time')"
+              <div
+                v-if="showReset(item.default, item.name)"
                 class="reset-link"
-                @click.capture="handleResetClick($event, 'time')"
+                @click.capture="handleResetClick($event, item.name)"
               >
                 Reset
-              </div> -->
+              </div>
             </v-expansion-panel-header>
             <v-expansion-panel-content>
-              <!-- <SliderHistogramChart
+              <!--Histogram  -->
+              <SliderHistogramChart
                 height="100"
-                v-if="histograms['time']"
+                v-if="histograms[item.name] && selectedValues[item.name]"
                 :width="getHistogramWidth()"
-                :data="histograms['time']"
-                :lower="timeRange[0]"
-                :upper="timeRange[1]"
-                :xmin="allowedTimeRange[0]"
-                :xmax="allowedTimeRange[1]"
-              /> -->
+                :data="histograms[item.name]"
+                :lower="selectedValues[item.name][0]"
+                :upper="selectedValues[item.name][1]"
+                :xmin="item.default[0]"
+                :xmax="item.default[1]"
+              />
 
+              <!-- Slider -->
               <vue-slider
                 :class="`${item.name}-slider`"
                 v-model="selectedValues[item.name]"
@@ -257,259 +271,29 @@
                   handleFilterChange(item.name, selectedValues[item.name])
                 "
                 :tooltip-formatter="item.tooltip.formatter"
-              ></vue-slider>
+                :tooltip-placement="tooltipPlacements[item.name]"
+              />
+
+              <!-- Switch for unknown values -->
+              <v-switch
+                v-if="
+                  Object.prototype.hasOwnProperty.call(
+                    excludeUnknownValues,
+                    item.name
+                  )
+                "
+                class="mt-5 pt-5"
+                v-model="excludeUnknownValues[item.name]"
+                label="Exclude unknown"
+                :ripple="false"
+                color="#7ab5e5"
+                hide-details
+                @change="
+                  handleFilterChange(item.name, selectedValues[item.name])
+                "
+              />
             </v-expansion-panel-content>
           </v-expansion-panel>
-
-          <!--------------------------------------->
-          <!-- FILTER #4: Date Filter ------------->
-          <!--------------------------------------->
-          <!-- <v-expansion-panel class="dark-theme">
-              <v-expansion-panel-header
-                ><div class="header-content">Date</div>
-                <div
-                  v-if="showReset('date')"
-                  class="reset-link"
-                  @click.capture="handleResetClick($event, 'date')"
-                >
-                  Reset
-                </div>
-              </v-expansion-panel-header>
-              <v-expansion-panel-content>
-                <SliderHistogramChart
-                  height="100"
-                  v-if="histograms['date']"
-                  :width="getHistogramWidth()"
-                  :data="histograms['date']"
-                  :lower="getAgeMs(dateRange[0] - 1)"
-                  :upper="getAgeMs(dateRange[1] + 1)"
-                  :xmin="getAgeMs(allowedDateRange[0])"
-                  :xmax="getAgeMs(allowedDateRange[1])"
-                />
-
-                <vue-slider
-                  class="date-slider"
-                  v-model="dateRange"
-                  :min="allowedDateRange[0]"
-                  :max="allowedDateRange[1]"
-                  :lazy="true"
-                  :tooltip-placement="dateTooltipPlacement"
-                  tooltip="always"
-                  :enableCross="false"
-                  @drag-end="sendDateUpdate"
-                  :tooltip-formatter="formatSliderTooltip"
-                  width="80%"
-                  :clickable="false"
-                ></vue-slider>
-              </v-expansion-panel-content>
-            </v-expansion-panel> -->
-
-          <!--------------------------------------->
-          <!-- FILTER #5: Time -------------------->
-          <!--------------------------------------->
-          <!-- <v-expansion-panel class="dark-theme">
-              <v-expansion-panel-header
-                ><div class="header-content">Time</div>
-                <div
-                  v-if="showReset('time')"
-                  class="reset-link"
-                  @click.capture="handleResetClick($event, 'time')"
-                >
-                  Reset
-                </div>
-              </v-expansion-panel-header>
-              <v-expansion-panel-content>
-                <SliderHistogramChart
-                  height="100"
-                  v-if="histograms['time']"
-                  :width="getHistogramWidth()"
-                  :data="histograms['time']"
-                  :lower="timeRange[0]"
-                  :upper="timeRange[1]"
-                  :xmin="allowedTimeRange[0]"
-                  :xmax="allowedTimeRange[1]"
-                />
-
-                <vue-slider
-                  class="time-slider"
-                  v-model="timeRange"
-                  :min="allowedTimeRange[0]"
-                  :max="allowedTimeRange[1]"
-                  :lazy="true"
-                  tooltip="always"
-                  :enableCross="false"
-                  @drag-end="sendTimeUpdate"
-                  :tooltip-placement="timeTooltipPlacement"
-                  :tooltip-formatter="formatTimeSliderTooltip"
-                  width="80%"
-                  :clickable="false"
-                ></vue-slider>
-              </v-expansion-panel-content>
-            </v-expansion-panel> -->
-
-          <!--------------------------------------->
-          <!-- FILTER #6: Day of week ---------->
-          <!--------------------------------------->
-          <!-- <v-expansion-panel class="dark-theme">
-              <v-expansion-panel-header
-                ><div class="header-content">Day of Week</div>
-                <div
-                  v-if="showReset('weekday')"
-                  class="reset-link"
-                  @click.capture="handleResetClick($event, 'weekday')"
-                >
-                  Reset
-                </div>
-              </v-expansion-panel-header>
-              <v-expansion-panel-content>
-                <v-row>
-                  <template
-                    v-for="(item, i) in [
-                      { lower: 0, upper: 4 },
-                      { lower: 4, upper: 7 },
-                    ]"
-                  >
-                    <v-col
-                      cols="12"
-                      sm="12"
-                      md="6"
-                      lg="6"
-                      :key="`col-${item.lower}-${item.upper}`"
-                      :class="getMultiColumnClass(i)"
-                    >
-                      <v-hover
-                        v-for="weekday in allowedWeekdays.slice(
-                          item.lower,
-                          item.upper
-                        )"
-                        :key="weekday"
-                      >
-                        <v-checkbox
-                          slot-scope="{ hover }"
-                          :value="weekday"
-                          v-model="selectedWeekdays"
-                          color="#7ab5e5"
-                          hide-details
-                          multiple
-                          :ripple="false"
-                          @click.native.capture="handleCheckboxClick"
-                        >
-                          <template v-slot:label>
-                            <div>
-                              {{ getAlias(weekday, "weekday") }}
-                              <span
-                                v-if="hover"
-                                class="only-link"
-                                v-on:click.stop="
-                                  handleOnlyClickWeekday($event, weekday)
-                                "
-                                >only</span
-                              >
-                            </div>
-                          </template>
-                        </v-checkbox>
-                      </v-hover>
-                    </v-col>
-                  </template>
-                </v-row>
-              </v-expansion-panel-content>
-            </v-expansion-panel> -->
-
-          <!--------------------------------------->
-          <!-- FILTER #7: Race/Ethnicity ---------->
-          <!--------------------------------------->
-          <!-- <v-expansion-panel class="dark-theme">
-              <v-expansion-panel-header
-                ><div class="header-content">Race/Ethnicity</div>
-                <div
-                  v-if="showReset('race')"
-                  class="reset-link"
-                  @click.capture="handleResetClick($event, 'race')"
-                >
-                  Reset
-                </div>
-              </v-expansion-panel-header>
-              <v-expansion-panel-content>
-                <v-hover v-for="raceValue in allowedRaces" :key="raceValue">
-                  <v-checkbox
-                    slot-scope="{ hover }"
-                    :value="raceValue"
-                    v-model="selectedRaces"
-                    color="#7ab5e5"
-                    hide-details
-                    multiple
-                    :ripple="false"
-                    @click.native.capture="handleCheckboxClick"
-                  >
-                    <template v-slot:label>
-                      <div>
-                        {{ getAlias(raceValue, "race") }}
-                        <span
-                          v-if="hover"
-                          class="only-link"
-                          v-on:click.stop="
-                            handleOnlyClickRace($event, raceValue)
-                          "
-                          >only</span
-                        >
-                      </div>
-                    </template>
-                  </v-checkbox>
-                </v-hover>
-              </v-expansion-panel-content>
-            </v-expansion-panel> -->
-
-          <!--------------------------------------->
-          <!-- FILTER #8: Gender ------------------>
-          <!--------------------------------------->
-          <!-- <v-expansion-panel class="dark-theme">
-              <v-expansion-panel-header
-                ><div class="header-content">Gender</div>
-                <div
-                  v-if="showReset('sex')"
-                  class="reset-link"
-                  @click.capture="handleResetClick($event, 'sex')"
-                >
-                  Reset
-                </div>
-              </v-expansion-panel-header>
-              <v-expansion-panel-content>
-                <v-hover
-                  v-for="genderValue in allowedGenders"
-                  :key="genderValue"
-                >
-                  <v-checkbox
-                    class="w-50"
-                    slot-scope="{ hover }"
-                    :value="genderValue"
-                    v-model="selectedGenders"
-                    color="#7ab5e5"
-                    hide-details
-                    multiple
-                    :ripple="false"
-                    @click.native.capture="handleCheckboxClick"
-                  >
-                    <template v-slot:label>
-                      <div>
-                        {{ getAlias(genderValue, "sex") }}
-                        <span
-                          v-if="hover"
-                          class="only-link"
-                          v-on:click.stop="
-                            handleOnlyClickGender($event, genderValue)
-                          "
-                          >only</span
-                        >
-                      </div>
-                    </template>
-                  </v-checkbox>
-                </v-hover>
-              </v-expansion-panel-content>
-            </v-expansion-panel> -->
-
-          <!--------------------------------------->
-          <!-- FILTER #9: Age --------------------->
-          <!--------------------------------------->
         </v-expansion-panels>
       </v-container>
     </div>
@@ -517,77 +301,55 @@
 </template>
 
 <script>
-// Internal
-// import { formatDate, msToTimeString, dateFromDay, toItemsArray } from "@/tools";
-// import { ALIASES } from "@/data-dict";
-// import SliderHistogramChart from "./SliderHistogramChart";
-// import DownloadButton from "./DownloadButton";
-
-// Vue slider
+import SliderHistogramChart from "./SliderHistogramChart";
+import DownloadButton from "./DownloadButton";
 import VueSlider from "vue-slider-component";
-import "vue-slider-component/theme/default.css";
-
-// External
-// import $ from "jquery";
+import $ from "jquery";
+import { format } from "d3-format";
 
 export default {
-  components: { VueSlider }, //, SliderHistogramChart, DownloadButton },
+  components: { VueSlider, SliderHistogramChart, DownloadButton },
   props: [
-    "pointsOnMap",
+    "filters",
+    "layerNamesDefault",
+    "layerNames",
+    "overlayLayerNames",
     "filteredSize",
-    "layers",
-    "aggLayers",
-    "filterDimensions",
-    // "selectedYear",
-    // "allowedAgeRange",
-    // "allowedDateRange",
-    // "currentFilters",
-    // "histograms",
-    // "data",
-    // "filteredData",
-    // "aggLayerURLs",
+    "pointsOnMap",
+    "histograms",
+    "defaultOverlayOpacity",
   ],
   data() {
     return {
-      expandedPanels: [],
-      aggLayerOpacity: 50,
-      // excludeUnknownAges: false,
-      // scrollable: true,
-      // onlyClick: false,
-      // aliases: ALIASES,
-      // // Allowed values
-      // allowedTimeRange: [0, 86399999],
-      // allowedRaces: Object.keys(ALIASES["race"]),
-      // allowedWeekdays: Object.keys(ALIASES["weekday"]).map((d) => +d), // store as int
-      // allowedGenders: Object.keys(ALIASES["sex"]),
-      // allowedLayers: Object.keys(ALIASES["layer"]),
-      // allowedAggLayers: Object.keys(ALIASES["aggLayer"]),
-      // // Default selections
-      // selectedRaces: Object.keys(ALIASES["race"]),
-      // selectedWeekdays: Object.keys(ALIASES["weekday"]).map((d) => +d),
-      // selectedGenders: Object.keys(ALIASES["sex"]),
-      selectedLayers: ["points"],
-      selectedAggLayer: null,
-      selectedValues: {},
-      // // Ranges for sliders
-      // ageRange: [0, 100],
-      // dateRange: [1, 366],
-      // timeRange: [0, 86399999],
-      // // Flags for switches
-      // fatalOnly: false,
-      // arrestsOnly: false,
+      expandedPanels: [], // Which sidebar panels are expanded
+      overlayOpacity: 50, // Opacity of overlay layer
+
+      // Filter values
+      selectedLayers: undefined, // Selected layers
+      selectedOverlay: null, // Selected aggregation layer
+      selectedValues: {}, // Selected values for each filter
+      excludeUnknownValues: {}, // Whether to exclude unknown values
+      tooltipPlacements: {}, // Placement of tooltip for each slider filter
     };
   },
   mounted() {
-    // Set default values
-    for (let i = 0; i < this.filterDimensions.length; i++) {
-      let item = this.filterDimensions[i];
-      this.selectedValues[item.name] = item.default;
-    }
+    // Set default opacity for overlays
+    this.overlayOpacity = this.defaultOverlayOpacity;
+
+    // Initialize filters and sliders
+    this.initializeFilters();
+    this.initializeSliders();
+
+    // Set the default selected layer
+    this.selectedLayers = this.layerNamesDefault;
   },
   watch: {
+    /* Handle updates to the selected layers */
     selectedLayers(nextValue, prevValue) {
-      // Layers to add
+      // No updates needed the first time (values are default)
+      if (prevValue === undefined) return;
+
+      // These are new active layers
       for (let i = 0; i < nextValue.length; i++) {
         if (!prevValue.includes(nextValue[i])) {
           this.$emit("update:filter", "layer", nextValue[i], true);
@@ -601,104 +363,187 @@ export default {
         }
       }
     },
-    selectedAggLayer(nextValue, prevValue) {
+
+    /* Handle updates to the selected agg layers */
+    selectedOverlay(nextValue, prevValue) {
+      // Do nothing if it didn't change
       if (prevValue === nextValue) return;
 
-      // No agg layers selected now, remove old
-      if (nextValue == null || prevValue != null) {
-        this.$emit("update:filter", "aggLayer", prevValue, false);
+      // Remove old agg layer
+      if (prevValue !== null)
+        this.$emit("update:filter", "layer", prevValue, false);
 
-        // Add any selected layers
+      // No agg layers selected now
+      if (nextValue == null) {
+        // Restore any selected non-agg layers
         for (let i = 0; i < this.selectedLayers.length; i++) {
           this.$emit("update:filter", "layer", this.selectedLayers[i], true);
         }
       }
       // New agg layer selected, add new
       else {
-        this.$emit("update:filter", "aggLayer", nextValue, true);
+        this.$emit("update:filter", "layer", nextValue, true);
 
-        // Remove any selected layers
-        for (let i = 0; i < this.selectedLayers.length; i++) {
-          this.$emit("update:filter", "layer", this.selectedLayers[i], false);
+        // New agg layer means we need to hide old selected layers from map
+        if (prevValue === null) {
+          for (let i = 0; i < this.selectedLayers.length; i++) {
+            this.$emit("update:filter", "layer", this.selectedLayers[i], false);
+          }
+        }
+      }
+    },
+  },
+  methods: {
+    /* Get the width of the histogram */
+    getHistogramWidth() {
+      return ($(".sidebar-inner-content").width() - 48) * 0.85;
+    },
+
+    /* Get the min width of the checkbox filter*/
+    getMinWidthForCheckboxFilter(ncol) {
+      let p = 100 / ncol;
+      return `min-width: ${p}%`;
+    },
+
+    /* Set default values for each filter */
+    initializeFilters() {
+      for (let i = 0; i < this.filters.length; i++) {
+        // Set the default value
+        let item = this.filters[i];
+        this.$set(this.selectedValues, item.name, item.default);
+
+        // Set the exclude unknown value
+        if (item.excludeUnknown) {
+          this.$set(this.excludeUnknownValues, item.name, false);
         }
       }
     },
 
-    //   minAge() {
-    //     this.sendAgeUpdate();
-    //   },
-    //   maxAge() {
-    //     this.sendAgeUpdate();
-    //   },
-    //   excludeUnknownAges() {
-    //     this.sendAgeUpdate();
-    //   },
-  },
+    getTooltipPlacement(name) {
+      let value = this.selectedValues[name];
+      let defaultValue = this.getDefaultValue(name);
 
-  methods: {
-    getMinWidth(ncol) {
-      let p = 100 / ncol;
-      return `min-width: ${p}%`;
+      let width = defaultValue[1] - defaultValue[0];
+      let f = (value[1] - value[0]) / width;
+      if (f < 0.35) return ["top", "bottom"];
+      else return ["bottom", "bottom"];
     },
+
+    /* Initialize each slider filter */
+    initializeSliders() {
+      // Loop over each slider tooltip
+      for (let i = 0; i < this.sliderFilters.length; i++) {
+        let item = this.sliderFilters[i];
+
+        // Set the default placement and make it reactive
+        this.$set(
+          this.tooltipPlacements,
+          item.name,
+          this.getTooltipPlacement(item.name)
+        );
+
+        // Update the placement when the value changes
+        this.$watch(
+          () => this.selectedValues[item.name],
+          () => {
+            this.$set(
+              this.tooltipPlacements,
+              item.name,
+              this.getTooltipPlacement(item.name)
+            );
+          }
+        );
+      }
+    },
+
+    /* Handle the filter change */
     handleFilterChange(filterName, value) {
-      this.$emit("update:filter", filterName, value);
+      // Include excluded values flag
+      if (
+        Object.prototype.hasOwnProperty.call(
+          this.excludeUnknownValues,
+          filterName
+        )
+      ) {
+        this.$emit(
+          "update:filter",
+          filterName,
+          value,
+          this.excludeUnknownValues[filterName]
+        );
+      }
+      // Just send the updated value
+      else this.$emit("update:filter", filterName, value);
     },
-    // handleAggDownload(selectedAgg, formatRadio, data) {
-    //   this.$emit("download-agg", selectedAgg, formatRadio, data);
-    // },
-    // getAgeMs(value) {
-    //   return +dateFromDay(this.selectedYear, value);
-    // },
-    // getHistogramWidth() {
-    //   return ($(".sidebar-inner-content").width() - 48) * 0.85;
-    // },
-    // getMultiColumnClass(i) {
-    //   if (this.$vuetify.breakpoint.smAndDown) {
-    //     return i == 0 ? "mb-0 pb-0" : "mt-0 pt-0";
-    //   }
-    //   return "";
-    // },
+
+    /* Reset all of the filters */
     resetAllFilters() {
       // These are the filters that can be reset
       let filters = this.resetableFilters;
 
-      // Loop over each available filter
-      for (let i = 0; i < this.filterDimensions.length; i++) {
-        let filter = this.filterDimensions[i];
+      // Keep track of those we reset
+      let filtersToReset = [];
 
-        // If resetable, reset it
+      // Loop over each available filter
+      for (let i = 0; i < this.filters.length; i++) {
+        let filter = this.filters[i];
+
+        // Is this filter resetable?
         if (filters.indexOf(filter.name) > -1) {
-          this.selectedValues[filter.name] = filter.default;
-          this.$emit("reset", filter.name);
+          // Reset the selected value if it's not already the default
+          let notDefault = this.isNotDefault(
+            filter.default,
+            this.selectedValues[filter.name]
+          );
+          if (notDefault) {
+            this.selectedValues[filter.name] = filter.default;
+            filtersToReset.push(filter.name);
+          }
+
+          // Reset the exclude unknown value
+          if (filter.excludeUnknown) {
+            this.excludeUnknownValues[filter.name] = false;
+            filtersToReset.push(filter.name);
+          }
         }
       }
+
+      // Send the filter update events
+      filtersToReset.forEach((filterName) => {
+        this.handleFilterChange(filterName, this.selectedValues[filterName]);
+      });
     },
+
+    /* Check if the value is not the default */
     isNotDefault(defaultValue, value) {
+      if (value == null || value == undefined) return false;
+
       // Object is an array
-      if (Array.isArray(value)) {
+      if (Array.isArray(defaultValue)) {
         for (let i = 0; i < defaultValue.length; i++) {
           if (value.indexOf(defaultValue[i]) == -1) return true;
         }
-      } else defaultValue !== value;
+        return false;
+      } else return defaultValue !== value;
     },
+
+    /* Whether to show the reset button */
     showReset(defaultValue, filterName) {
+      // Test for exclude values
+      if (
+        Object.prototype.hasOwnProperty.call(
+          this.excludeUnknownValues,
+          filterName
+        )
+      ) {
+        if (this.excludeUnknownValues[filterName]) return true;
+      }
+
+      // Test for default value
       return this.isNotDefault(defaultValue, this.selectedValues[filterName]);
     },
-    // setDateSlider(value) {
-    //   this.dateRange = value;
-    // },
-    // setAgeSlider(value) {
-    //   this.ageRange = value;
-    // },
-    // formatSliderTooltip(day) {
-    //   return formatDate(this.selectedYear, day);
-    // },
-    // formatTimeSliderTooltip(msSinceMidnight) {
-    //   return msToTimeString(msSinceMidnight);
-    // },
-    // updateDateSlider(value) {
-    //   this.$emit("update-date", value);
-    // },
+
+    /* Handle the click on a checkbox */
     handleCheckboxClick(event) {
       if (this.onlyClick) {
         event.stopPropagation();
@@ -706,53 +551,59 @@ export default {
         this.onlyClick = false;
       }
     },
+
+    /* Handle the reset click */
     handleResetClick(event, filterName) {
       // Stop button from expanding
       event.stopPropagation();
       event.preventDefault();
-      // Send the reset event
-      this.$emit("reset", filterName);
+      this.resetFilter(filterName);
+    },
 
+    /* Reset a filter */
+    resetFilter(filterName) {
       // Reset filter
       this.selectedValues[filterName] = this.getDefaultValue(filterName);
+
+      // Reset the exclude unknown value
+      if (
+        Object.prototype.hasOwnProperty.call(
+          this.excludeUnknownValues,
+          filterName
+        )
+      ) {
+        this.excludeUnknownValues[filterName] = false;
+      }
+
+      // Handle filter value change
+      this.handleFilterChange(filterName, this.selectedValues[filterName]);
     },
+
+    /* Get the default value */
     getDefaultValue(filterName) {
-      return this.filterDimensions.find((filter) => filter.name === filterName)
-        .default;
+      return this.filters.find((filter) => filter.name === filterName).default;
     },
+
+    /* Handle click to the "Only" button */
     handleOnlyClick(event, filterName, value) {
       this.onlyClick = true;
       this.selectedValues[filterName] = [value];
       this.handleFilterChange(filterName, [value]);
     },
+
+    /* Handle click to the "Only" button for layers */
     handleOnlyClickLayer(event, value) {
       this.onlyClick = true;
       this.selectedLayers = [value];
-      // this.selectedAggLayers = null;
     },
-    // handleOnlyClickGender(event, value) {
-    //   this.onlyClick = true;
-    //   this.selectedGenders = [value];
-    // },
-    // getAlias(value, kind) {
-    //   let out = this.aliases[kind][value];
-    //   if (out) return out;
-    //   else return value;
-    // },
-    // sendDateUpdate() {
-    //   this.$emit("update-date", this.dateRange);
-    // },
-    // sendTimeUpdate() {
-    //   this.$emit("update-time", this.timeRange);
-    // },
-    // sendAgeUpdate() {
-    //   this.$emit("update-age", this.ageRange, this.excludeUnknownAges);
-    // },
+
+    /* Format number */
     formatNumber(d) {
-      return d.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+      return format(",.0f")(d);
     },
   },
   computed: {
+    /* Get the filters that can be reset */
     resetableFilters() {
       let filters = [
         this.switchFilters,
@@ -767,61 +618,42 @@ export default {
       }
       return out;
     },
+
+    /* Switch filters */
     switchFilters() {
-      return this.filterDimensions.filter((d) => d.kind == "switch");
+      return this.filters.filter((d) => d.kind == "switch");
     },
+
+    /* Checkbox filters */
     checkboxFilters() {
-      return this.filterDimensions.filter((d) => d.kind == "checkbox");
+      return this.filters.filter((d) => d.kind == "checkbox");
     },
+
+    /* Slider filters */
     sliderFilters() {
-      return this.filterDimensions.filter((d) => d.kind == "slider");
+      return this.filters.filter((d) => d.kind == "slider");
     },
-    aggLayerItems() {
-      let out = [];
-      for (let i = 0; i < this.aggLayers.length; i++) {
-        let layer = this.aggLayers[i];
-        out.push({ value: layer.name, text: layer.label });
-      }
-      return out;
-    },
+
+    /* Should we show the reset all button */
     showResetAllButton() {
-      // if (this.showReset("race")) return false;
-      // if (this.showReset("weekday")) return false;
-      // if (this.showReset("age")) return false;
-      // if (this.showReset("date")) return false;
-      // if (this.showReset("time")) return false;
-      // if (this.showReset("sex")) return false;
-      // if (this.fatalOnly) return false;
-      // if (this.arrestsOnly) return false;
+      for (let i = 0; i < this.resetableFilters.length; i++) {
+        let name = this.resetableFilters[i];
+        if (this.showReset(this.getDefaultValue(name), name)) return true;
+      }
       return false;
     },
-    // timeTooltipPlacement() {
-    //   if (this.timeRange[1] - this.timeRange[0] < 8 * 60 * 60 * 1000)
-    //     return ["top", "bottom"];
-    //   else return ["bottom", "bottom"];
-    // },
-    // dateTooltipPlacement() {
-    //   if (this.dateRange[1] - this.dateRange[0] < 60) return ["top", "bottom"];
-    //   else return ["bottom", "bottom"];
-    // },
-    // ageTooltipPlacement() {
-    //   if (this.ageRange[1] - this.ageRange[0] < 20) return ["top", "bottom"];
-    //   else return ["bottom", "bottom"];
-    // },
+
+    /* How many points are missing? */
     missingPoints() {
       return this.filteredSize - this.pointsOnMap;
     },
-    // minDate() {
-    //   return this.$store.state.minFormattedDate;
-    // },
-    // maxDate() {
-    //   return this.$store.state.maxFormattedDate;
-    // },
   },
 };
 </script>
 
 <style>
+@import "~vue-slider-component/theme/default.css";
+
 .sidebar-subtitle {
   font-size: 1.6rem;
   font-weight: 500;
@@ -841,6 +673,7 @@ input#aggregate-select:focus {
 }
 .my-divider {
   border-top: 2px solid #7ab5e5 !important;
+  margin: auto !important;
 }
 .sidebar-inner-content .v-expansion-panel:before {
   box-shadow: none !important;
@@ -880,12 +713,11 @@ input#aggregate-select:focus {
   overflow-y: scroll;
 }
 
-/* Header */
+/* Header section */
 .sidebar-header {
   text-align: center;
   padding: 5px;
 }
-
 .data-size-message {
   font-style: italic;
   padding-bottom: 5px;
@@ -894,6 +726,10 @@ input#aggregate-select:focus {
   font-size: 0.8rem;
   font-style: italic;
   padding-top: 0.25rem;
+}
+
+#buttons-section {
+  border-bottom: 5px solid #868b8e;
 }
 
 /* Panel config */
@@ -921,6 +757,7 @@ input#aggregate-select:focus {
   color: #fff !important;
 }
 
+/* Links */
 .reset-link {
   color: #7ab5e5;
   font-weight: 500;
@@ -943,9 +780,7 @@ input#aggregate-select:focus {
 }
 
 /* Sliders */
-.age-slider,
-.date-slider,
-.time-slider {
+[class$="-slider"] {
   margin-top: 30px;
   margin-bottom: 40px;
   margin-left: auto;
@@ -971,10 +806,6 @@ input#aggregate-select:focus {
 
 .hide {
   opacity: 0;
-}
-
-#buttons-section {
-  border-bottom: 5px solid #868b8e;
 }
 
 @media only screen and (max-width: 767px) {
