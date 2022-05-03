@@ -134,8 +134,7 @@ export default {
     filteredSize() {
       this.$emit("update:filteredData", this.filteredData);
     },
-    data(newData, oldData) {
-      console.log(newData, oldData);
+    data(newData) {
       // Initialize the dashboard
       this.initializeDashboard();
 

@@ -134,7 +134,6 @@ export default {
     else if (year === "All Years") year = null;
     else year = parseInt(year);
 
-    console.log("IN MOUNTED, setting selectedYear to ", year);
     this.selectedYear = year;
   },
   computed: {
@@ -580,7 +579,7 @@ export default {
     /* When the route changes, handle year selection */
     "$route.query.year": {
       handler(newYear) {
-        console.log(this.$route);
+        
         // Do nothing if we are coming from about page
         if (this.$route.path == "/about") return;
         if (this.prevRoute.path === "/about") return;
@@ -595,7 +594,6 @@ export default {
 
         // Update the selected year
         if (newYear !== this.selectedYear) {
-          console.log("Setting selectedYear to ", newYear);
           this.selectedYear = newYear;
         }
       },
