@@ -34,7 +34,7 @@
 <script>
 // Internal
 import a11yTable from "@/components/a11yTable";
-import { formatNumber } from "@/tools.js";
+import { format } from "d3-format";
 import { CATEGORIES, ALIASES } from "@/data-dict";
 
 // External
@@ -91,7 +91,6 @@ export default {
         let data = [];
         for (let i = 0; i < this.categories.length; i++)
           data.push(this.groupedData.get(this.categories[i]) || 0);
-
         return [{ data: data, name: "Total" }];
       } else return null;
     },
@@ -165,7 +164,7 @@ export default {
         dataLabels: {
           enabled: true,
           formatter: (d) =>
-            `${formatNumber(d)} (${((100 * d) / this.total).toFixed(0)}%)`,
+            `${format(",.0f")(d)} (${((100 * d) / this.total).toFixed(0)}%)`,
           textAnchor: "start",
           offsetY: 7,
           offsetX: 10,
@@ -181,7 +180,7 @@ export default {
           enabled: false,
           theme: "dark",
           x: { show: true, formatter: (d) => this.getAlias(d) },
-          y: { formatter: (d) => formatNumber(d) },
+          y: { formatter: (d) => format(",.0f")(d) },
         },
         grid: { show: false },
       };

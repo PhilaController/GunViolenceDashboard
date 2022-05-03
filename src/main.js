@@ -5,27 +5,16 @@ import $ from 'jquery'
 // App and router
 import App from '@/App'
 import { getRouter } from "@/plugins/router";
-import vuetify from '@/plugins/vuetify' // path to vuetify export
-
-// Leaflet
-import { Icon } from "leaflet";
-import "leaflet/dist/leaflet.css";
+import vuetify from '@/plugins/vuetify'
+import store from '@/plugins/store'
 
 // Don't show tip
 Vue.config.productionTip = false;
 
-// Fix leaflet icons
-delete Icon.Default.prototype._getIconUrl;
-Icon.Default.mergeOptions({
-  iconRetinaUrl: require("leaflet/dist/images/marker-icon-2x.png"),
-  iconUrl: require("leaflet/dist/images/marker-icon.png"),
-  shadowUrl: require("leaflet/dist/images/marker-shadow.png")
-});
-
 
 // load and set the HTML template we are using
-let audit_content = $("#main");
-audit_content.html(`
+let content = $("#main");
+content.html(`
 <div id="app"></div>
 <div class="back-link m-5">
 <a href="https://controller.phila.gov/policy-analysis/reports/">
@@ -33,7 +22,7 @@ audit_content.html(`
 </a>
 <p class='help-message mb-5'>
   Comments or feedback? Please contact
-  <a href="mailto:controller.policy@phila.gov">controller.policy@phila.gov</a>.
+  <a href="mailto:controller@phila.gov">controller@phila.gov</a>.
   </p>
 </div>`
 );
@@ -48,6 +37,7 @@ getRouter().then(router => {
   new Vue({
     router,
     vuetify,
+    store,
     render: h => h(App)
   }).$mount('#app')
 })
