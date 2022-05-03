@@ -134,7 +134,8 @@ export default {
     filteredSize() {
       this.$emit("update:filteredData", this.filteredData);
     },
-    data(newData) {
+    data(newData, oldData) {
+      console.log(newData, oldData);
       // Initialize the dashboard
       this.initializeDashboard();
 
@@ -575,9 +576,11 @@ export default {
   margin-top: 100px;
   margin-bottom: 20px;
   border: 5px solid #868b8e;
+}
 
-  @media (max-width: 767.98px) {
-    flex-direction: column;
+@media screen and (max-width: 767.98px) {
+  .mapping-dashboard {
+    flex-direction: column !important;
   }
 }
 </style>

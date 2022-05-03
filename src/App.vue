@@ -4,7 +4,7 @@
       <v-main>
         <transition name="fade" mode="out-in">
           <keep-alive>
-            <router-view />
+            <router-view :key="$route.path" />
           </keep-alive>
         </transition>
       </v-main>
@@ -28,8 +28,10 @@ export default {
   padding-bottom: 6.25rem;
   overflow-x: hidden;
   min-height: 100vh;
+}
 
-  @media (max-width: 991.98px) {
+@media screen and (max-width: 991.98px) {
+  #app {
     padding-top: 1.25rem !important;
   }
 }

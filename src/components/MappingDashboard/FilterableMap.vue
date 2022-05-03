@@ -1,23 +1,25 @@
 <template>
   <div class="filterable-map__container">
     <!-- Container for map -->
-    <div id="map"></div>
+    <div class="filterable-map__container__inner">
+      <div id="map"></div>
 
-    <!-- Loading circle -->
-    <div class="map-overlay">
-      <div class="map-overlay__inner" v-if="dataLoading || showLoader_">
-        <v-progress-circular indeterminate size="32" color="#fff" />
+      <!-- Loading circle -->
+      <div class="map-overlay">
+        <div class="map-overlay__inner" v-if="dataLoading || showLoader_">
+          <v-progress-circular indeterminate size="32" color="#fff" />
+        </div>
       </div>
-    </div>
 
-    <!-- Map Legend -->
-    <MapLegend
-      :width="250"
-      :barHeight="15"
-      :tickSize="12"
-      tickFormat=",.0f"
-      ref="MapLegend"
-    />
+      <!-- Map Legend -->
+      <MapLegend
+        :width="250"
+        :barHeight="15"
+        :tickSize="12"
+        tickFormat=",.0f"
+        ref="MapLegend"
+      />
+    </div>
   </div>
 </template>
 
@@ -350,13 +352,18 @@ export default {
       }
 
       // Add the layer too
-      map.addLayer({
-        id: layer.name + TAG,
-        type: layer.type,
-        source: layer.source + TAG,
-        layout: {},
-        paint: paint,
-      });
+      let beforeId = layer.beforeId;
+      if (beforeId) beforeId = beforeId + TAG;
+      map.addLayer(
+        {
+          id: layer.name + TAG,
+          type: layer.type,
+          source: layer.source + TAG,
+          layout: {},
+          paint: paint,
+        },
+        beforeId
+      );
 
       // Add a popup
       if (layer.tooltip) {
@@ -509,6 +516,7 @@ export default {
 .filterable-map__container {
   flex: 1 1;
   display: flex;
+  width: 100% !important;
   position: relative;
 }
 
@@ -517,6 +525,17 @@ export default {
   top: 0;
   bottom: 0;
   width: 100%;
+  height: 100%;
+}
+
+@media screen and (max-width: 767.98px) {
+  .filterable-map__container__inner {
+    height: 60vh !important;
+  }
+
+  .maplibregl-ctrl-attrib {
+    display: none !important;
+  }
 }
 
 .map-overlay {

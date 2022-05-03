@@ -47,6 +47,7 @@ import Navbar from "@/components/Navbar";
 
 import { timeParse, timeFormat } from "d3-time-format";
 import { max } from "d3-array";
+import { format } from "d3-format";
 import { AWSFetch } from "@/utils/io";
 import {
   msToTimeString,
@@ -65,6 +66,8 @@ export default {
   },
   data() {
     return {
+      prevRoute: null,
+
       // Data
       store: {}, // The input geoJSON data for each year
       data: null, // The input geoJSON data
@@ -130,6 +133,8 @@ export default {
     if (year === undefined) year = this.dataYears[0];
     else if (year === "All Years") year = null;
     else year = parseInt(year);
+
+    console.log("IN MOUNTED, setting selectedYear to ", year);
     this.selectedYear = year;
   },
   computed: {
@@ -315,6 +320,7 @@ export default {
           source: "shootings",
           type: "heatmap",
           aggregated: false,
+          beforeId: "Point locations",
           paint: {
             "heatmap-intensity": {
               stops: [
@@ -379,6 +385,7 @@ export default {
             scaleName: "Log",
             colorRange: [0.5, 1],
           },
+          beforeId: "Point locations",
           paint: {
             "line-width": [
               "interpolate",
@@ -523,12 +530,6 @@ export default {
             formatter(msSinceMidnight) {
               return msToTimeString(msSinceMidnight);
             },
-            placement(timeRange) {
-              if (!timeRange) return ["bottom", "bottom"];
-              if (timeRange[1] - timeRange[0] < 8 * 60 * 60 * 1000)
-                return ["top", "bottom"];
-              else return ["bottom", "bottom"];
-            },
           },
         },
         {
@@ -541,12 +542,6 @@ export default {
           tooltip: {
             formatter(ts) {
               return timestampToTimeString(ts, "%b %-d");
-            },
-            placement(dateRange) {
-              if (!dateRange) return ["bottom", "bottom"];
-              const diff = 120 * 24 * 60 * 60 * 1000; // ms in 60 days
-              if (dateRange[1] - dateRange[0] < diff) return ["top", "bottom"];
-              else return ["bottom", "bottom"];
             },
           },
         },
@@ -570,20 +565,26 @@ export default {
             formatter(value) {
               return value;
             },
-            placement(value) {
-              if (!value) return ["bottom", "bottom"];
-              if (value[1] - value[0] < 20) return ["top", "bottom"];
-              else return ["bottom", "bottom"];
-            },
           },
         },
       ];
     },
   },
   watch: {
+    $route: {
+      handler(to, from) {
+        this.prevRoute = from;
+      },
+      immediate: true,
+    },
     /* When the route changes, handle year selection */
     "$route.query.year": {
       handler(newYear) {
+        console.log(this.$route);
+        // Do nothing if we are coming from about page
+        if (this.$route.path == "/about") return;
+        if (this.prevRoute.path === "/about") return;
+
         // If new year is undefined, use the default year (current year)
         if (newYear === undefined) newYear = this.dataYears[0];
 
@@ -593,7 +594,10 @@ export default {
         else newYear = parseInt(newYear);
 
         // Update the selected year
-        if (newYear !== this.selectedYear) this.selectedYear = newYear;
+        if (newYear !== this.selectedYear) {
+          console.log("Setting selectedYear to ", newYear);
+          this.selectedYear = newYear;
+        }
       },
     },
 
@@ -604,6 +608,11 @@ export default {
     },
   },
   methods: {
+    beforeRouteEnter(to, from, next) {
+      next((vm) => {
+        vm.prevRoute = from;
+      });
+    },
     getCircleRadiusStyle() {
       if (this.selectedYear === null) {
         return ["interpolate", ["exponential", 1.25], ["zoom"], 10, 1, 16, 9];
@@ -633,7 +642,7 @@ export default {
                         <tbody>
                           <tr class="map-tooltip__line">
                             <td class="map-tooltip__line-header">Count</td>
-                            <td>${count}</td>
+                            <td>${format(",.0f")(count)}</td>
                           </tr>
                         </tbody>
                       </table>
