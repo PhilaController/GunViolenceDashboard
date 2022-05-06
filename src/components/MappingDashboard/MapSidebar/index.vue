@@ -1,59 +1,58 @@
 <template>
   <div class="filterable-map-sidebar">
+    <!-- Show the overlay when map is loading -->
+    <v-overlay :value="showOverlay" absolute opacity="0.5" color="#353d42" />
+
     <!--------------------------------------->
     <!------------ Sidebar header ----------->
     <!--------------------------------------->
     <div class="sidebar-header">
-      <!-- Slot for the header -->
-      <slot name="header">
-        <!-- Data size message -->
-        <div id="data-size-section">
-          <div class="data-size-message mt-3">
-            Showing locations for
-            <span style="color: #7ab5e5">{{ formatNumber(pointsOnMap) }}</span>
-            shooting victim<span v-if="pointsOnMap !== 1">s</span>
-          </div>
-          <div class="sidebar-note" v-bind:class="{ hide: missingPoints == 0 }">
-            Note: {{ missingPoints }} victim<span v-if="missingPoints > 1"
-              >s</span
-            >
-            not shown due to missing locations
-          </div>
+      <!-- Data size message -->
+      <div id="data-size-section">
+        <div class="data-size-message mt-3">
+          Showing locations for
+          <span style="color: #7ab5e5">{{ formatNumber(pointsOnMap) }}</span>
+          {{ markerTitle }}<span v-if="pointsOnMap !== 1">s</span>
         </div>
+        <div class="sidebar-note" v-bind:class="{ hide: missingPoints == 0 }">
+          Note: {{ missingPoints }} {{ markerShortTitle
+          }}<span v-if="missingPoints > 1">s</span>
+          not shown due to missing locations
+        </div>
+      </div>
 
-        <!-- Download and reset button -->
-        <div
-          id="buttons-section"
-          class="
-            d-flex
-            justify-content-center
-            flex-column
-            align-items-center
-            mt-5
-          "
+      <!-- Download and reset button -->
+      <div
+        id="buttons-section"
+        class="
+          d-flex
+          justify-content-center
+          flex-column
+          align-items-center
+          mt-5
+        "
+      >
+        <!-- Download data -->
+        <DownloadButton
+          :overlayLayerNames="overlayLayerNames"
+          @download-data="$emit('download-data', $event)"
+        />
+
+        <!-- Reset all filters -->
+        <v-btn
+          id="reset-all-button"
+          class="ml-5 mr-5 mt-3 mb-5"
+          @click="resetAllFilters"
+          outlined
+          color="white"
+          :disabled="!showResetAllButton"
+          dark
+          :ripple="false"
         >
-          <!-- Download data -->
-          <DownloadButton
-            :overlayLayerNames="overlayLayerNames"
-            @download-data="$emit('download-data', $event)"
-          />
-
-          <!-- Reset all filters -->
-          <v-btn
-            id="reset-all-button"
-            class="ml-5 mr-5 mt-3 mb-5"
-            @click="resetAllFilters"
-            outlined
-            color="white"
-            :disabled="!showResetAllButton"
-            dark
-            :ripple="false"
-          >
-            <i class="fas fa-undo"></i
-            ><span class="ml-3">Reset All Filters</span></v-btn
-          >
-        </div>
-      </slot>
+          <i class="fas fa-undo"></i
+          ><span class="ml-3">Reset All Filters</span></v-btn
+        >
+      </div>
     </div>
 
     <!-- Scrollable content -->
@@ -61,7 +60,7 @@
       <!--------------------------------------->
       <!-- Map Layers ------------------------->
       <!--------------------------------------->
-      <v-container id="map-layers-section">
+      <v-container class="sidebar__layers">
         <div class="map-layers__inner" v-if="layerNames.length > 1">
           <div class="text-center mt-3 sidebar-subtitle">Map Layers</div>
           <v-divider class="my-divider" />
@@ -140,7 +139,7 @@
       <!--------------------------------------->
       <!-- Filters Section ------------------->
       <!--------------------------------------->
-      <v-container id="filters-section">
+      <v-container class="sidebar__filters">
         <div class="text-center sidebar-subtitle">Filters</div>
         <v-divider class="my-divider" />
 
@@ -183,7 +182,7 @@
             <v-expansion-panel-header
               ><div class="header-content">{{ item.label }}</div>
               <div
-                v-if="showReset(item.default, item.name)"
+                v-if="showReset(item.name)"
                 class="reset-link"
                 @click.capture="handleResetClick($event, item.name)"
               >
@@ -236,7 +235,7 @@
             <v-expansion-panel-header
               ><div class="header-content">{{ item.label }}</div>
               <div
-                v-if="showReset(item.default, item.name)"
+                v-if="showReset(item.name)"
                 class="reset-link"
                 @click.capture="handleResetClick($event, item.name)"
               >
@@ -301,11 +300,47 @@
 </template>
 
 <script>
+// Internal
 import SliderHistogramChart from "./SliderHistogramChart";
 import DownloadButton from "./DownloadButton";
+
+// External
 import VueSlider from "vue-slider-component";
 import $ from "jquery";
 import { format } from "d3-format";
+import qs from "qs";
+
+/*------ 
+Decode the query string
+-------*/
+function queryStringDecoder(str, decoder, charset) {
+  const strWithoutPlus = str.replace(/\+/g, " ");
+  if (charset === "iso-8859-1") {
+    // unescape never throws, no try...catch needed:
+    return strWithoutPlus.replace(/%[0-9a-f]{2}/gi, unescape);
+  }
+
+  if (/^(\d+|\d*\.\d+)$/.test(str)) {
+    return parseFloat(str);
+  }
+
+  const keywords = {
+    true: true,
+    false: false,
+    null: null,
+    undefined,
+  };
+  if (str in keywords) {
+    return keywords[str];
+  }
+
+  // utf-8
+  try {
+    return decodeURIComponent(strWithoutPlus);
+  } catch (e) {
+    return strWithoutPlus;
+  }
+}
 
 export default {
   components: { VueSlider, SliderHistogramChart, DownloadButton },
@@ -318,23 +353,30 @@ export default {
     "pointsOnMap",
     "histograms",
     "defaultOverlayOpacity",
+    "showOverlay",
+    "markerTitle",
+    "markerShortTitle",
+    "mapReady",
   ],
   data() {
     return {
       expandedPanels: [], // Which sidebar panels are expanded
       overlayOpacity: 50, // Opacity of overlay layer
-
-      // Filter values
       selectedLayers: undefined, // Selected layers
       selectedOverlay: null, // Selected aggregation layer
       selectedValues: {}, // Selected values for each filter
       excludeUnknownValues: {}, // Whether to exclude unknown values
       tooltipPlacements: {}, // Placement of tooltip for each slider filter
+      initialQuery: {}, // Save any initial query string parameters
+      isDefault: {}, // Whether the filter is set to its default
     };
   },
   mounted() {
     // Set default opacity for overlays
     this.overlayOpacity = this.defaultOverlayOpacity;
+
+    // Get the initial filters passed via query string
+    this.parseInitialQuery();
 
     // Initialize filters and sliders
     this.initializeFilters();
@@ -344,7 +386,42 @@ export default {
     this.selectedLayers = this.layerNamesDefault;
   },
   watch: {
-    /* Handle updates to the selected layers */
+    /*------ 
+    When the map is ready, update based on the initial query string
+    -------*/
+    mapReady(newValue) {
+      if (newValue) {
+        // Initial filters
+        let filters = this.initialQuery["f"];
+        if (filters) {
+          for (let f in filters) {
+            this.selectedValues[f] = filters[f];
+            this.handleFilterChange(f, filters[f]);
+          }
+        }
+
+        // Initial exclude unknown values
+        let exclude = this.initialQuery["excludeUnknown"];
+        if (exclude) {
+          for (let e in exclude) {
+            this.excludeUnknownValues[e] = true;
+            this.handleFilterChange(e, this.selectedValues[e]);
+          }
+        }
+
+        // Initial layers
+        let layers = this.initialQuery["layers"];
+        if (layers) this.selectedLayers = layers;
+
+        // Initial overlay
+        let overlay = this.initialQuery["overlay"];
+        if (overlay) this.selectedOverlay = overlay;
+      }
+    },
+
+    /*------ 
+    Handle updates to the selected layers
+    -------*/
     selectedLayers(nextValue, prevValue) {
       // No updates needed the first time (values are default)
       if (prevValue === undefined) return;
@@ -362,9 +439,14 @@ export default {
           this.$emit("update:filter", "layer", prevValue[i], false);
         }
       }
+
+      // Add query param to the path
+      this.addQueryParam("layers", `${nextValue}`);
     },
 
-    /* Handle updates to the selected agg layers */
+    /*------ 
+    Handle updates to the selected overlay layer
+    -------*/
     selectedOverlay(nextValue, prevValue) {
       // Do nothing if it didn't change
       if (prevValue === nextValue) return;
@@ -391,35 +473,161 @@ export default {
           }
         }
       }
+
+      // Add query param to the path
+      if (nextValue !== null) this.addQueryParam("overlay", nextValue);
+      else this.removeQueryParam("overlay");
     },
   },
   methods: {
-    /* Get the width of the histogram */
+    /*------ 
+    Add the specified query parameter to the URL
+    -------*/
+    addQueryParam(key, value) {
+      // Copy existing query
+      let q = Object.assign({}, this.$route.query);
+
+      // Only update if it's different
+      if (value !== this.$route.query[key]) {
+        // Set and push
+        q[key] = value;
+        this.$router.push({ query: q }).catch((error) => {
+          if (error.name !== "NavigationDuplicated") {
+            throw error;
+          }
+        });
+      }
+    },
+
+    /*------ 
+    Remove a query parameter from the URL
+    -------*/
+    removeQueryParam(key) {
+      // Copy and delete
+      let q = Object.assign({}, this.$route.query);
+
+      // Update if it exists
+      if (q[key]) {
+        delete q[key];
+        this.$router.push({ query: q }).catch((error) => {
+          if (error.name !== "NavigationDuplicated") {
+            throw error;
+          }
+        });
+      }
+    },
+
+    /*------ 
+    Parse the initial query string parameters
+    -------*/
+    parseInitialQuery() {
+      // The allowed keys
+      let keys = ["layers", "overlay", "f", "excludeUnknown"];
+
+      // Parse each one
+      for (let i = 0; i < keys.length; i++) {
+        let key = keys[i];
+
+        // Get the parsed value
+        if (this.$route.query[key]) {
+          if (key == "overlay") this.initialQuery[key] = this.$route.query[key];
+          else if (key == "layers")
+            this.initialQuery[key] = this.$route.query[key].split(",");
+          else
+            this.initialQuery[key] = qs.parse(this.$route.query[key], {
+              ignoreQueryPrefix: true,
+              arrayFormat: "bracket",
+              decoder: queryStringDecoder,
+            });
+        }
+      }
+    },
+
+    /*------ 
+    Based on sidebar width, get the width of the histogram
+    -------*/
     getHistogramWidth() {
       return ($(".sidebar-inner-content").width() - 48) * 0.85;
     },
 
-    /* Get the min width of the checkbox filter*/
+    /*------ 
+    Get the min-width css parameter for checkbox lists
+    -------*/
     getMinWidthForCheckboxFilter(ncol) {
       let p = 100 / ncol;
       return `min-width: ${p}%`;
     },
 
-    /* Set default values for each filter */
+    /*------ 
+    Initialize the filters
+    -------*/
     initializeFilters() {
       for (let i = 0; i < this.filters.length; i++) {
         // Set the default value
         let item = this.filters[i];
         this.$set(this.selectedValues, item.name, item.default);
+        this.$set(this.isDefault, item.name, true);
 
         // Set the exclude unknown value
         if (item.excludeUnknown) {
           this.$set(this.excludeUnknownValues, item.name, false);
+
+          // Watch for changes
+          this.$watch(
+            () => this.excludeUnknownValues[item.name],
+            () => {
+              // Update query string with non-default parameters
+              let newValue = {};
+              for (let name in this.excludeUnknownValues) {
+                if (this.excludeUnknownValues[name]) newValue[name] = true;
+              }
+              newValue = qs.stringify(newValue);
+
+              // Update route with new query string
+              if (newValue !== this.$route.query["excludeUnknown"]) {
+                if (Object.keys(newValue).length > 0)
+                  this.addQueryParam("excludeUnknown", newValue);
+                else this.removeQueryParam("excludeUnknown");
+              }
+            }
+          );
         }
+
+        // Watch each parameter
+        this.$watch(
+          () => this.selectedValues[item.name],
+          (value) => {
+            // Update default array
+            this.$set(
+              this.isDefault,
+              item.name,
+              !this.isNotDefault(item.default, value)
+            );
+
+            // Update query string with non-default parameters
+            let newValue = {};
+            for (let name in this.selectedValues) {
+              if (!this.isDefault[name])
+                newValue[name] = this.selectedValues[name];
+            }
+            newValue = qs.stringify(newValue);
+
+            // Update route with new query string
+            if (newValue !== this.$route.query["f"]) {
+              if (Object.keys(newValue).length > 0)
+                this.addQueryParam("f", newValue);
+              else this.removeQueryParam("f");
+            }
+          }
+        );
       }
     },
 
+    /*------ 
+    Determine the slider tooltips based on slider width vs. default width
+    -------*/
     getTooltipPlacement(name) {
+      // Values
       let value = this.selectedValues[name];
       let defaultValue = this.getDefaultValue(name);
 
@@ -429,9 +637,10 @@ export default {
       else return ["bottom", "bottom"];
     },
 
-    /* Initialize each slider filter */
+    /*------ 
+    Initialize slider filters
+    -------*/
     initializeSliders() {
-      // Loop over each slider tooltip
       for (let i = 0; i < this.sliderFilters.length; i++) {
         let item = this.sliderFilters[i];
 
@@ -456,7 +665,9 @@ export default {
       }
     },
 
-    /* Handle the filter change */
+    /*------ 
+    Emit a filter event when filter changes
+    -------*/
     handleFilterChange(filterName, value) {
       // Include excluded values flag
       if (
@@ -476,7 +687,9 @@ export default {
       else this.$emit("update:filter", filterName, value);
     },
 
-    /* Reset all of the filters */
+    /*------ 
+    Reset all of the filters to their default values
+    -------*/
     resetAllFilters() {
       // These are the filters that can be reset
       let filters = this.resetableFilters;
@@ -491,11 +704,7 @@ export default {
         // Is this filter resetable?
         if (filters.indexOf(filter.name) > -1) {
           // Reset the selected value if it's not already the default
-          let notDefault = this.isNotDefault(
-            filter.default,
-            this.selectedValues[filter.name]
-          );
-          if (notDefault) {
+          if (!this.isDefault[filter.name]) {
             this.selectedValues[filter.name] = filter.default;
             filtersToReset.push(filter.name);
           }
@@ -514,8 +723,11 @@ export default {
       });
     },
 
-    /* Check if the value is not the default */
+    /*------ 
+    Check if the input value is the same as the default
+    -------*/
     isNotDefault(defaultValue, value) {
+      // No value, then it's got to be default
       if (value == null || value == undefined) return false;
 
       // Object is an array
@@ -527,8 +739,10 @@ export default {
       } else return defaultValue !== value;
     },
 
-    /* Whether to show the reset button */
-    showReset(defaultValue, filterName) {
+    /*------ 
+    Should we show the reset link for the specific filter
+    -------*/
+    showReset(filterName) {
       // Test for exclude values
       if (
         Object.prototype.hasOwnProperty.call(
@@ -540,10 +754,12 @@ export default {
       }
 
       // Test for default value
-      return this.isNotDefault(defaultValue, this.selectedValues[filterName]);
+      return !this.isDefault[filterName];
     },
 
-    /* Handle the click on a checkbox */
+    /*------ 
+    Handle the click on a checkbox
+    -------*/
     handleCheckboxClick(event) {
       if (this.onlyClick) {
         event.stopPropagation();
@@ -552,7 +768,9 @@ export default {
       }
     },
 
-    /* Handle the reset click */
+    /*------ 
+    Handle the click on a reset link
+    -------*/
     handleResetClick(event, filterName) {
       // Stop button from expanding
       event.stopPropagation();
@@ -560,7 +778,9 @@ export default {
       this.resetFilter(filterName);
     },
 
-    /* Reset a filter */
+    /*------ 
+    Reset the specified filter
+    -------*/
     resetFilter(filterName) {
       // Reset filter
       this.selectedValues[filterName] = this.getDefaultValue(filterName);
@@ -579,31 +799,41 @@ export default {
       this.handleFilterChange(filterName, this.selectedValues[filterName]);
     },
 
-    /* Get the default value */
+    /*------ 
+    Get the default value 
+    -------*/
     getDefaultValue(filterName) {
       return this.filters.find((filter) => filter.name === filterName).default;
     },
 
-    /* Handle click to the "Only" button */
+    /*------ 
+    Handle click to the "Only" button
+    -------*/
     handleOnlyClick(event, filterName, value) {
       this.onlyClick = true;
       this.selectedValues[filterName] = [value];
       this.handleFilterChange(filterName, [value]);
     },
 
-    /* Handle click to the "Only" button for layers */
+    /*------ 
+    Handle click to the "Only" button for layers
+    -------*/
     handleOnlyClickLayer(event, value) {
       this.onlyClick = true;
       this.selectedLayers = [value];
     },
 
-    /* Format number */
+    /*------ 
+    Utility to format a number
+    -------*/
     formatNumber(d) {
       return format(",.0f")(d);
     },
   },
   computed: {
-    /* Get the filters that can be reset */
+    /*------ 
+    These filters are able to be reset
+    -------*/
     resetableFilters() {
       let filters = [
         this.switchFilters,
@@ -619,31 +849,41 @@ export default {
       return out;
     },
 
-    /* Switch filters */
+    /*------ 
+    The switch filters
+    -------*/
     switchFilters() {
       return this.filters.filter((d) => d.kind == "switch");
     },
 
-    /* Checkbox filters */
+    /*------ 
+    The checkbox filters
+    -------*/
     checkboxFilters() {
       return this.filters.filter((d) => d.kind == "checkbox");
     },
 
-    /* Slider filters */
+    /*------ 
+    The slider filters
+    -------*/
     sliderFilters() {
       return this.filters.filter((d) => d.kind == "slider");
     },
 
-    /* Should we show the reset all button */
+    /*------ 
+    Should we show the reset all button?
+    -------*/
     showResetAllButton() {
       for (let i = 0; i < this.resetableFilters.length; i++) {
         let name = this.resetableFilters[i];
-        if (this.showReset(this.getDefaultValue(name), name)) return true;
+        if (this.showReset(name)) return true;
       }
       return false;
     },
 
-    /* How many points are missing? */
+    /*------ 
+    How many points are missing?
+    -------*/
     missingPoints() {
       return this.filteredSize - this.pointsOnMap;
     },
@@ -659,10 +899,12 @@ export default {
   font-weight: 500;
   margin-bottom: 0.5rem;
 }
-#filters-section {
+
+.sidebar__filters {
   margin-top: 0px;
 }
-#map-layers-section {
+
+.sidebar__layers {
   padding: 16px 24px;
 }
 input#aggregate-select:focus {
@@ -701,6 +943,7 @@ input#aggregate-select:focus {
   display: flex;
   flex-direction: column;
   border-left: 5px solid #868b8e;
+  position: relative;
 }
 @media only screen and (max-width: 767px) {
   .filterable-map-sidebar {

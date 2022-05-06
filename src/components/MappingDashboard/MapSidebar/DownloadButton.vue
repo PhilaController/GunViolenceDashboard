@@ -55,7 +55,7 @@
         </v-radio-group>
 
         <!-- Select for Aggregation Download -->
-        <div id="aggregate-select-wrapper">
+        <div id="aggregate-select-wrapper" v-if="overlayLayerNames > 0">
           <v-select
             id="aggregate-select"
             class="mb-5"
@@ -91,13 +91,12 @@ export default {
   props: ["overlayLayerNames"],
   data() {
     return {
-      expandedPanels: [],
-      downloadDialog: false,
-      selectionRadio: 0,
-      selectionGroups: ["Include Filters", "Ignore Filters"],
-      formatRadio: 0,
-      formatGroups: ["CSV", "GeoJSON"],
-      selectedAgg: null,
+      downloadDialog: false, // Is the dialog open?
+      selectionRadio: 0, // Which selection radio button is selected?
+      selectionGroups: ["Include Filters", "Ignore Filters"], // Includes or excludes filters
+      formatRadio: 0, // Which format radio button is selected?
+      formatGroups: ["CSV", "GeoJSON"], // CSV or GeoJSON
+      selectedAgg: null, // Is there a selected agg layer?
     };
   },
   computed: {
@@ -126,9 +125,6 @@ export default {
         ignoreFilters: this.selectionRadio == 1,
         outputType: this.formatGroups[this.formatRadio],
       };
-
-      console.log(params);
-      console.log(this.$emit);
       this.$emit("download-data", params);
 
       // Close the dialog

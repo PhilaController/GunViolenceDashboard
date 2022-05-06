@@ -6,7 +6,7 @@
 
       <!-- Loading circle -->
       <div class="map-overlay">
-        <div class="map-overlay__inner" v-if="dataLoading || showLoader_">
+        <div class="map-overlay__inner" v-if="showLoadingSpinner">
           <v-progress-circular indeterminate size="32" color="#fff" />
         </div>
       </div>
@@ -49,6 +49,11 @@ export default {
           minZoom: 10,
           zoom: 11,
           center: [-75.15, 39.985],
+          maxPitch: 0,
+          pitchWithRotate: false,
+          dragRotate: false,
+          touchZoomRotate: false,
+          touchPitch: false,
         };
       },
     },
@@ -63,9 +68,18 @@ export default {
       activeLayers: [], // Names of layers that are active on the map
       showLegend_: false, // Whether to show the legend
       sourcesCopy: [], // Copy of sources
+      zoom: null, // Zoom level for map
+      center: null, // Center of map
     };
   },
   created() {
+    // Get the map query param and set initial values
+    if (this.$route.query.map) {
+      let hash = this.$route.query.map.split("/");
+      this.mapOptions.zoom = parseFloat(hash[0]);
+      this.mapOptions.center = [parseFloat(hash[2]), parseFloat(hash[1])];
+    }
+
     // Store the map
     this.map = null;
 
@@ -89,10 +103,7 @@ export default {
       let map = new maplibregl.Map({
         container: mapContainer,
         style: require("@/data/style.json"),
-        center: this.mapOptions.center,
-        zoom: this.mapOptions.zoom,
-        maxZoom: this.mapOptions.maxZoom,
-        minZoom: this.mapOptions.minZoom,
+        ...this.mapOptions,
       });
 
       // Add control
@@ -101,15 +112,26 @@ export default {
 
       // Add initial layers & sources
       map.on("load", async () => {
+        // Zoom & center
+        this.zoom = map.getZoom();
+        this.center = map.getCenter();
+
         // Loop over default layers
         for (let layerName of this.layerNamesDefault) {
-          this.setActiveLayers(layerName, true);
+          await this.setActiveLayers(layerName, true);
         }
         // Ready for first time
         if (!this.mapLoaded) {
           this.mapLoaded = true;
           this.$emit("map:ready");
         }
+      });
+
+      map.on("move", () => {
+        this.center = map.getCenter();
+      });
+      map.on("zoom", () => {
+        this.zoom = map.getZoom();
       });
 
       // Show spinner when data is loading
@@ -129,10 +151,55 @@ export default {
 
   computed: {
     /*------ 
+    Whether to show the loading spinner on the map
+    -------*/
+    showLoadingSpinner() {
+      return this.dataLoading || this.showLoader_;
+    },
+
+    /*------ 
+    The map hash: /zoomm/lat/lng
+    -------*/
+    mapHash() {
+      if (this.zoom == null || this.center == null) {
+        return "";
+      } else
+        return `${this.zoom.toFixed(2)}/${this.center.lat.toFixed(
+          5
+        )}/${this.center.lng.toFixed(5)}`;
+    },
+
+    /*------ 
     The default layers
     -------*/
     layerNamesDefault() {
       return this.layers.filter((l) => l.showOnStart).map((l) => l.name);
+    },
+  },
+
+  watch: {
+    /*------ 
+    When we are showing/hiding the loading spinner, emit a corresponding event
+    -------*/
+    showLoadingSpinner(newVal) {
+      this.$emit("showOverlay", newVal);
+    },
+
+    /*------ 
+    When the map hash changes, update the query url
+    -------*/
+    mapHash(newVal, prevVal) {
+      // Do nothing if it's the same
+      if (newVal === prevVal || newVal === "") return;
+
+      // Update the query params
+      let q = Object.assign({}, this.$route.query);
+      q["map"] = newVal;
+      this.$router.push({ query: q }).catch((error) => {
+        if (error.name !== "NavigationDuplicated") {
+          throw error;
+        }
+      });
     },
   },
 

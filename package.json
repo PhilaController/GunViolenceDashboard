@@ -20,6 +20,7 @@
         "d3-time-format": "^3.0.0",
         "maplibre-gl": "^2.1.9",
         "papaparse": "^5.3.1",
+        "qs": "^6.10.3",
         "vue": "^2.6.11",
         "vue-apexcharts": "^1.6.0",
         "vue-router": "^3.4.9",

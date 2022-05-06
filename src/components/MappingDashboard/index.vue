@@ -9,7 +9,11 @@
       :layers="layers"
       :defaultOverlayOpacity="defaultOverlayOpacity"
       :title="title"
-      @map:ready="$emit('map:ready')"
+      @map:ready="
+        mapReady = true;
+        $emit('map:ready');
+      "
+      @showOverlay="showSidebarOverlay = $event"
     />
 
     <!-- Sidebar -->
@@ -23,6 +27,10 @@
       :pointsOnMap="totalPointsOnMap"
       :histograms="histograms"
       :defaultOverlayOpacity="defaultOverlayOpacity"
+      :showOverlay="showSidebarOverlay"
+      :markerTitle="markerTitle"
+      :markerShortTitle="markerShortTitle"
+      :mapReady="mapReady"
       @update:filter="handleFilterUpdate"
       @update:opacity="handleOpacityChange"
       @download-data="handleDownload"
@@ -53,10 +61,13 @@ export default {
     histogramBins: { type: Number, default: 50 },
     title: String,
     downloadConfig: Object,
+    markerTitle: { type: String, default: "marker" },
+    markerShortTitle: { type: String, default: "marker" },
   },
 
   data() {
     return {
+      showSidebarOverlay: false, // Show an overlay over the sidebar
       crossfilter: null, // Crossfilter instance
       crossfilterConfig: {}, // Crossfilter dimensions
       filteredData: null, // Filtered data array
@@ -65,6 +76,7 @@ export default {
       preventMapUpdate: false, // Prevent map update
       defaultOverlayOpacity: 50,
       filtersCopy: [], // Internal copy to avoid overwriting
+      mapReady: false,
     };
   },
   created() {
@@ -237,7 +249,7 @@ export default {
     -------*/
     resetDashboard() {
       // Do not need to propagate update to map right away
-      this.preventMapUpdate = true;
+      //this.preventMapUpdate = true;
 
       // Reset all filters
       this.resetAllFilters();
@@ -249,7 +261,7 @@ export default {
       // Run the post filter updates
       this.$nextTick(() => {
         this.postFilterMapUpdate();
-        this.preventMapUpdate = false;
+        //this.preventMapUpdate = false;
       });
     },
 
@@ -525,8 +537,9 @@ export default {
 
       // Run the post-update hooks if filtered data length changed
       this.$nextTick(() => {
-        if (oldLength != this.filteredData.length && !this.preventMapUpdate)
+        if (oldLength != this.filteredData.length && !this.preventMapUpdate) {
           this.postFilterMapUpdate();
+        }
       });
     },
 

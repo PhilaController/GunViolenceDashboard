@@ -29,6 +29,8 @@
         :sources="sources"
         :downloadConfig="downloadConfig"
         title="# Shooting Victims"
+        markerTitle="shooting victim"
+        markerShortTitle="victim"
         @update:filteredData="filteredFeatures = $event"
         @map:ready="handleMapReady"
       />
@@ -128,12 +130,17 @@ export default {
     };
   },
   mounted() {
-    // Set the year
+    // Get the year from the route path
     let year = this.$route.query.year;
-    if (year === undefined) year = this.dataYears[0];
-    else if (year === "All Years") year = null;
+
+    // If undefined, use the default value (current year)
+    if (year === undefined) {
+      year = this.dataYears[0];
+      this.$router.push({ path: this.$route.fullPath, query: { year: year } }); // Add to the path
+    } else if (year === "All Years") year = null; //
     else year = parseInt(year);
 
+    // Set the selected year
     this.selectedYear = year;
   },
   computed: {
