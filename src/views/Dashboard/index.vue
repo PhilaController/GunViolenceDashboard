@@ -137,7 +137,8 @@ export default {
     if (year === undefined) {
       year = this.dataYears[0];
       this.$router.push({ path: this.$route.fullPath, query: { year: year } }); // Add to the path
-    } else if (year === "All Years") year = null; //
+    } else if (year === "All Years") year = null;
+    //
     else year = parseInt(year);
 
     // Set the selected year
@@ -277,7 +278,7 @@ export default {
               };
               let fatal = data.fatal == 1 ? "Fatal" : "Nonfatal";
               let arrest = data.has_court_case ? "Yes" : "No";
-              return `<div class='map-tooltip'>
+              let text = `<div class='map-tooltip'>
               <div class="map-tooltip__title">${fatal} Shooting</div>
               <table class="w-100">
                 <tbody>
@@ -294,14 +295,19 @@ export default {
               </table>
               <div class="map-tooltip__title mt-2">Victim Info</div>
               <table class="w-100">
-                <tbody>
-                  <tr class="map-tooltip__line">
+                <tbody>`;
+
+              if (data.age !== "Unknown")
+                text += `<tr class="map-tooltip__line">
                     <td>${data.age} years old</td>
-                  </tr>
-                  <tr class="map-tooltip__line">
+                  </tr>`;
+
+              if (data.race !== "Other/Unknown")
+                text += `<tr class="map-tooltip__line">
                     <td>${aliases[data.race]}</td>
-                  </tr>
-                  <tr class="map-tooltip__line">
+                  </tr>`;
+
+              text += `<tr class="map-tooltip__line">
                     <td>${aliases[data.sex]}</td>
                   </tr>
                 </tbody>
@@ -318,6 +324,7 @@ export default {
                 </tbody>
               </table>
             </div>`;
+              return text;
             },
           },
         },
@@ -541,7 +548,14 @@ export default {
         {
           name: "date",
           label: "Date",
-          getFilter: (value) => [value[0], value[1] + 1],
+          getFilter: (value) => {
+            let start = new Date(value[0]);
+            start.setHours(0, 0, 0, 0);
+
+            let end = new Date(value[1]);
+            end.setHours(23, 59, 59, 999);
+            return [start.getTime(), end.getTime()];
+          },
           kind: "slider",
           showHistogram: true,
           autoLimits: true,
@@ -664,7 +678,9 @@ export default {
       let dt;
       const parseTime = timeParse("%Y/%m/%d %H:%M:%S");
       data.features.forEach(function (d, i) {
+        // Get a date object
         dt = parseTime(d.properties["date"]);
+
         d.properties["date"] = dt.getTime();
         d.properties["weekday"] = dt.getDay();
         d.properties["time"] = getMsSinceMidnight(dt);

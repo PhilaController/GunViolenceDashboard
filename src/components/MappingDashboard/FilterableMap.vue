@@ -52,7 +52,6 @@ export default {
           maxPitch: 0,
           pitchWithRotate: false,
           dragRotate: false,
-          touchZoomRotate: false,
           touchPitch: false,
         };
       },
@@ -109,6 +108,12 @@ export default {
       // Add control
       let nav = new maplibregl.NavigationControl({ showCompass: false });
       map.addControl(nav, "top-right");
+
+      // disable map rotation using right click + drag
+      map.dragRotate.disable();
+
+      // disable map rotation using touch rotation gesture
+      map.touchZoomRotate.disableRotation();
 
       // Add initial layers & sources
       map.on("load", async () => {

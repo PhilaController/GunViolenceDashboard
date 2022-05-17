@@ -901,11 +901,11 @@ export default {
 }
 
 .sidebar__filters {
-  margin-top: 0px;
+  margin-top: 0px !important;
 }
 
 .sidebar__layers {
-  padding: 16px 24px;
+  padding: 16px 24px !important;
 }
 input#aggregate-select:focus {
   background-color: transparent;

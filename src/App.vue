@@ -60,6 +60,9 @@ export default {
   padding: 0 7px 0 7px;
   text-align: center;
 }
+.map-tooltip {
+  padding-bottom: 0.75rem !important;
+}
 .map-tooltip__line-header {
   font-weight: bold;
   text-align: left !important;
