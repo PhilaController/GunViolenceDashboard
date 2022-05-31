@@ -85,7 +85,7 @@
 
         <p>
           Information on court cases associated with shooting incidents is
-          updated on a weekly basis. Court case information is determiend by
+          updated on a weekly basis. Court case information is determined by
           searching for the police incident number for each shooting incident
           (the "DC number") using the Philadelphia Municipal Court interface of
           the Unified Judicial System of Pennsylvania web portal.
@@ -93,30 +93,30 @@
 
         <p>
           The software behind this application is publicly available on the
-          <a href="https://github.com/PhiladelphiaController" target="blank_"
+          <a href="https://github.com/PhilaController" target="blank_"
             >Controller's Office's GitHub:</a
           >:
         </p>
         <ul>
           <li>
             <a
-              href="https://github.com/PhiladelphiaController/GunViolenceDashboard"
+              href="https://github.com/PhilaController/GunViolenceDashboard"
               target="blank_"
             >
               <i class="fas fa-external-link-alt mr-2"></i>
               <span class="url-break">
-                https://github.com/PhiladelphiaController/GunViolenceDashboard</span
+                https://github.com/PhilaController/GunViolenceDashboard</span
               ></a
             >
           </li>
           <li>
             <a
-              href="https://github.com/PhiladelphiaController/gun-violence-dashboard-data"
+              href="https://github.com/PhilaController/gun-violence-dashboard-data"
               target="blank_"
             >
               <i class="fas fa-external-link-alt mr-2"></i>
               <span class="url-break">
-                https://github.com/PhiladelphiaController/gun-violence-dashboard-data
+                https://github.com/PhilaController/gun-violence-dashboard-data
               </span>
             </a>
           </li>
@@ -136,7 +136,7 @@
           >
           a tweet or open up a new
           <a
-            href="https://github.com/PhiladelphiaController/gun-violence-dashboard/issues"
+            href="https://github.com/PhilaController/gun-violence-dashboard/issues"
             >GitHub Issue</a
           >.
         </p>
