@@ -220,6 +220,21 @@ export default {
           },
         },
         {
+          name: "PA Senate District",
+          source: "senate-district-geo",
+          type: "fill",
+          aggregated: true,
+          overlay: true,
+          column: "senate_district",
+          geoid: "district",
+          tooltip: {
+            formatter: this.tooltipFunction(
+              (d) => `Senate District #${d.district}`
+            ),
+            on: "mousemove",
+          },
+        },
+        {
           name: "Elementary School Catchment",
           source: "elementary-school-geo",
           type: "fill",
@@ -247,6 +262,7 @@ export default {
           type: "circle",
           aggregated: false,
           showOnStart: true,
+          alwaysAllowed: true,
           paint: {
             "circle-radius": this.getCircleRadiusStyle(),
             "circle-color": [
@@ -429,41 +445,55 @@ export default {
         { name: "shootings", data: this.data, filterColumn: "id" },
         {
           name: "city-limits-geo",
-          url: "https://services.arcgis.com/fLeGjb7u4uXqeF9q/arcgis/rest/services/City_Limits/FeatureServer/0",
+          url:
+            "https://services.arcgis.com/fLeGjb7u4uXqeF9q/arcgis/rest/services/City_Limits/FeatureServer/0",
         },
         {
           name: "police-district-geo",
-          url: "https://services.arcgis.com/fLeGjb7u4uXqeF9q/arcgis/rest/services/Boundaries_District/FeatureServer/0",
+          url:
+            "https://services.arcgis.com/fLeGjb7u4uXqeF9q/arcgis/rest/services/Boundaries_District/FeatureServer/0",
           outFields: ["DISTRICT_"],
         },
         {
           name: "council-district-geo",
-          url: "https://services.arcgis.com/fLeGjb7u4uXqeF9q/arcgis/rest/services/Council_Districts_2016/FeatureServer/0",
+          url:
+            "https://services.arcgis.com/fLeGjb7u4uXqeF9q/arcgis/rest/services/Council_Districts_2016/FeatureServer/0",
           outFields: ["DISTRICT"],
         },
         {
           name: "zip-code-geo",
-          url: "https://services.arcgis.com/fLeGjb7u4uXqeF9q/arcgis/rest/services/Philadelphia_ZCTA_2018/FeatureServer/0",
+          url:
+            "https://services.arcgis.com/fLeGjb7u4uXqeF9q/arcgis/rest/services/Philadelphia_ZCTA_2018/FeatureServer/0",
           outFields: ["zip_code"],
         },
         {
           name: "neighborhood-geo",
-          url: "https://services.arcgis.com/fLeGjb7u4uXqeF9q/arcgis/rest/services/Philly_NTAs/FeatureServer/0",
+          url:
+            "https://services.arcgis.com/fLeGjb7u4uXqeF9q/arcgis/rest/services/Philly_NTAs/FeatureServer/0",
           outFields: ["neighborhood"],
         },
         {
+          name: "senate-district-geo",
+          url:
+            "https://services.arcgis.com/fLeGjb7u4uXqeF9q/arcgis/rest/services/PA_Senate_Districts/FeatureServer/0",
+          outFields: ["district"],
+        },
+        {
           name: "house-district-geo",
-          url: "https://services.arcgis.com/fLeGjb7u4uXqeF9q/arcgis/rest/services/PA_House_Districts/FeatureServer/0",
+          url:
+            "https://services.arcgis.com/fLeGjb7u4uXqeF9q/arcgis/rest/services/PA_House_Districts/FeatureServer/0",
           outFields: ["district"],
         },
         {
           name: "elementary-school-geo",
-          url: "https://services.arcgis.com/fLeGjb7u4uXqeF9q/ArcGIS/rest/services/Philadelphia_Elementary_School_Catchments_SY_2019_2020/FeatureServer/0",
+          url:
+            "https://services.arcgis.com/fLeGjb7u4uXqeF9q/ArcGIS/rest/services/Philadelphia_Elementary_School_Catchments_SY_2019_2020/FeatureServer/0",
           outFields: ["name"],
         },
         {
           name: "streets-geo",
-          url: "https://services.arcgis.com/fLeGjb7u4uXqeF9q/arcgis/rest/services/Philadelphia_Streets/FeatureServer/0",
+          url:
+            "https://services.arcgis.com/fLeGjb7u4uXqeF9q/arcgis/rest/services/Philadelphia_Streets/FeatureServer/0",
           outFields: ["segment_id", "street_name", "block_number"],
           whereColumn: "segment_id",
           filterColumn: "segment_id",
@@ -677,7 +707,7 @@ export default {
       // Add additional features
       let dt;
       const parseTime = timeParse("%Y/%m/%d %H:%M:%S");
-      data.features.forEach(function (d, i) {
+      data.features.forEach(function(d, i) {
         // Get a date object
         dt = parseTime(d.properties["date"]);
 
@@ -775,4 +805,3 @@ export default {
   },
 };
 </script>
-

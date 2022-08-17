@@ -21,6 +21,7 @@
       ref="MapSidebar"
       :filters="filtersCopy"
       :layerNamesDefault="layerNamesDefault"
+      :alwaysAllowedLayers="alwaysAllowedLayers"
       :layerNames="layerNames"
       :overlayLayerNames="overlayLayerNames"
       :filteredSize="filteredSize"
@@ -102,6 +103,14 @@ export default {
       return this.layers
         .filter((l) => !l.overlay && !l.static)
         .map((l) => l.name);
+    },
+    /*------ 
+    Always allowed layers
+    -------*/
+    alwaysAllowedLayers() {
+      return this.layerNames.filter(
+        (name) => this.layers.find((l) => l.name == name).alwaysAllowed
+      );
     },
     /*------ 
     Default toggeable layer names

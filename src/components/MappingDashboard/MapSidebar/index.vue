@@ -347,6 +347,7 @@ export default {
   props: [
     "filters",
     "layerNamesDefault",
+    "alwaysAllowedLayers",
     "layerNames",
     "overlayLayerNames",
     "filteredSize",
