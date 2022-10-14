@@ -55,7 +55,7 @@
         </v-radio-group>
 
         <!-- Select for Aggregation Download -->
-        <div id="aggregate-select-wrapper" v-if="overlayLayerNames > 0">
+        <div id="aggregate-select-wrapper" v-if="overlayLayerNames.length > 0">
           <v-select
             id="aggregate-select"
             class="mb-5"
