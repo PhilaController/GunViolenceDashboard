@@ -205,7 +205,7 @@ export default {
     font-size: 1.6rem;
     margin-top: 50px;
     text-align: center;
-    line-height: 1.5;
+    line-height: 1.2;
   }
   .header-message {
     text-align: center;
