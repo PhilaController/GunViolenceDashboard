@@ -27,7 +27,8 @@
               ><i class="fas fa-external-link-alt"></i
               ><span class="ml-2">Shooting victims data</span></a
             >
-            from the City of Philadelphia's open data portal Open Data Philly
+            from the City of Philadelphia's open data program, posted on
+            OpenDataPhilly.org
           </li>
           <li>
             <a
