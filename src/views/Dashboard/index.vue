@@ -1,65 +1,93 @@
 <template>
   <div class="dashboard-view">
     <!-- Top app navbar -->
-    <Navbar
-      :dataYears="dataYears"
-      :selectedYear="selectedYear"
-      :showOverlay="showOverlay"
+    <navbar
+      :data-years="dataYears"
+      :selected-year="selectedYear"
+      :show-overlay="showOverlay"
     />
 
     <!-- Header message -->
-    <HeaderMessage
+    <header-message
       ref="headerMessage"
       :fatal="fatalCount"
       :nonfatal="nonfatalCount"
-      :currentYear="currentYear"
-      :minYear="minYear"
-      :selectedYear="selectedYear"
-      :latestDataDate="latestDataDate"
-      :showOverlay="showOverlay"
+      :current-year="currentYear"
+      :min-year="minYear"
+      :selected-year="selectedYear"
+      :latest-data-date="latestDataDate"
+      :show-overlay="showOverlay"
     />
 
+    <!-- Display dashboard when data is loaded -->
     <div v-if="data !== null">
-      <!-- Dashboard -->
-      <MappingDashboard
+      <!-- Map -->
+      <!-- <mapping-dashboard
         ref="MappingDashboard"
         :data="data"
         :filters="filters"
         :layers="layers"
         :sources="sources"
-        :downloadConfig="downloadConfig"
+        :download-config="downloadConfig"
         title="# Shooting Victims"
-        markerTitle="shooting victim"
-        markerShortTitle="victim"
-        @update:filteredData="filteredFeatures = $event"
-        @map:ready="handleMapReady"
-      />
+        marker-title="shooting victim"
+        marker-short-title="victim"
+        @update:filtered-data="filteredFeatures = $event"
+        @map:ready="mapReady = true"
+      /> -->
 
-      <!-- Chart dashboard -->
-      <ChartDashboard ref="ChartDashboard" :filteredData="filteredFeatures" />
+      <!-- Charts -->
+      <!-- <chart-dashboard ref="ChartDashboard" :filtered-data="filteredFeatures" /> -->
     </div>
   </div>
 </template>
 
-<script>
-import MappingDashboard from "@/components/MappingDashboard";
-import ChartDashboard from "./ChartDashboard";
-import HeaderMessage from "./HeaderMessage";
-import Navbar from "@/components/Navbar";
+<script lang="ts">
+import { defineComponent, PropType } from "vue";
+import Vue from "vue";
+import { Route, NavigationGuardNext } from "vue-router";
 
-import { timeParse, timeFormat } from "d3-time-format";
-import { max } from "d3-array";
-import { format } from "d3-format";
-import { AWSFetch } from "@/utils/io";
+// Local
+import MappingDashboard from "@/components/MappingDashboard/index.vue";
+import ChartDashboard from "./ChartDashboard.vue";
+import HeaderMessage from "./HeaderMessage.vue";
+import Navbar from "@/components/Navbar.vue";
 import {
-  msToTimeString,
   getMsSinceMidnight,
+  msToTimeString,
   timestampToTimeString,
 } from "@/utils/datetime";
 
-export default {
+// Types
+import {
+  ShootingVictimsGeoJson,
+  ShootingVictimsProperties,
+  ShootingVictimsFeatures,
+  RaceValues,
+  SexValues,
+} from "@/types/ShootingsData";
+import { LayerConfig, TitleFunction } from "@/types/Layers";
+import { SourceConfig } from "@/types/Sources";
+import { FilterConfig } from "@/types/Filters";
+import { DownloadConfig } from "@/types/DownloadConfig";
+
+// External
+import { max } from "d3-array";
+import { format } from "d3-format";
+import { timeParse } from "d3-time-format";
+import { Feature, Point } from "geojson";
+
+/**
+ * The main dashboard component.
+ */
+export default defineComponent({
   name: "DashboardView",
-  props: ["dataYears"],
+  props: {
+    /**
+     * An array of the years for which we have data
+     */
+    dataYears: { type: Array as PropType<Array<number>>, required: true },
+  },
   components: {
     Navbar,
     MappingDashboard,
@@ -68,85 +96,133 @@ export default {
   },
   data() {
     return {
-      prevRoute: null,
+      /**
+       * Store the previous route
+       */
+      prevRoute: null as null | string,
 
-      // Data
-      store: {}, // The input geoJSON data for each year
-      data: null, // The input geoJSON data
-      filteredFeatures: null, // The filtered GeoJSON features
+      /**
+       * Data store to cache geosjon data
+       */
+      store: {} as { [key: number]: ShootingVictimsGeoJson },
 
-      // Loader flags
-      isLoading: true, // Whether the data is loading
-      mapReady: false, // Whether the map is ready
+      /**
+       * Current geojson data
+       */
+      data: null as ShootingVictimsGeoJson | null,
 
-      // Data specific variables
-      fatalCount: 0, // Count of fatal shootings
-      nonfatalCount: 0, // Count of nonfatal shootings
-      latestDataDate: null, // Latest date of data
+      /**
+       * The filtered geojson features array
+       */
+      filteredFeatures: null as ShootingVictimsFeatures | null,
 
-      // Year-related variables
-      selectedYear: undefined, // The selected year from the nav bar
-      minYear: 2015, // Minimum data year
-      currentYear: new Date().getFullYear(), // The current year
+      /**
+       * Whether the data is still loading
+       */
+      isLoading: true, //
 
-      // Download config
-      downloadConfig: {
-        exclude: ["id", "segment_id", "latino", "age_group"],
+      /**
+       * Whether the map is initialized
+       */
+      mapReady: false,
+
+      /**
+       * The count of fatal shootings
+       */
+      fatalCount: 0,
+
+      /**
+       * The count of nonfatal shootings
+       */
+      nonfatalCount: 0,
+
+      /**
+       * The latest date in the current data
+       */
+      latestDataDate: null as null | Date,
+
+      /**
+       * The currently selected year;
+       * When all years are selected, value is null
+       */
+      selectedYear: undefined as number | null | undefined,
+
+      /**
+       * Minimum data year
+       */
+      minYear: 2015,
+
+      /**
+       * The current year
+       */
+      currentYear: new Date().getFullYear(),
+    };
+  },
+  mounted() {
+    /**
+     * When mounted, determine if there is a year query param and use it,
+     * if not, use the default data year (latest year).
+     */
+
+    // The year query param
+    let routeYear = this.$route.query?.year;
+
+    // Use the query param year
+    if (typeof routeYear == "string") {
+      if (routeYear == "All Years") this.selectedYear = null;
+      else this.selectedYear = parseInt(routeYear);
+    }
+    // No query param year so use default
+    else {
+      // If undefined, use the default value (current year)
+      this.selectedYear = this.dataYears[0];
+
+      // Update the query param in the path
+      this.$router.push({
+        path: this.$route.fullPath,
+        query: { year: this.selectedYear.toString() },
+      });
+    }
+  },
+  computed: {
+    /**
+     * Configuration options for when data is downloaded
+     */
+    downloadConfig(): DownloadConfig {
+      return {
+        exclude: ["segment_id", "latino", "age_group", "dateInMs", "timeInMs"],
         formatters: {
-          date: (d) => timeFormat("%m/%d/%Y")(new Date(d)),
-          race: (d) => {
+          race: (d: RaceValues) => {
             let aliases = {
               W: "White (Non-Hispanic)",
               B: "Black (Non-Hispanic)",
               H: "Hispanic (Black or White)",
               A: "Asian",
+              "Other/Unknown": "Other/Unknown",
             };
-            return aliases[d] ? aliases[d] : d;
+            return aliases[d];
           },
-          fatal: (d) => {
-            let aliases = {
-              1: "Fatal",
-              0: "Nonfatal",
-            };
-            return aliases[d] ? aliases[d] : d;
+          fatal: (d: true | false) => {
+            return d ? "Fatal" : "Nonfatal";
           },
-          sex: (d) => {
+          sex: (d: SexValues) => {
             let aliases = {
               M: "Male",
               F: "Female",
             };
-            return aliases[d] ? aliases[d] : d;
+            return aliases[d];
           },
-          has_court_case: (d) => {
-            let aliases = {
-              true: "Yes",
-              false: "No",
-            };
-            return aliases[d] ? aliases[d] : d;
+          has_court_case: (d: true | false) => {
+            return d ? "Yes" : "No";
           },
-          time: (d) => msToTimeString(d),
         },
-      },
-    };
-  },
-  mounted() {
-    // Get the year from the route path
-    let year = this.$route.query.year;
+      };
+    },
 
-    // If undefined, use the default value (current year)
-    if (year === undefined) {
-      year = this.dataYears[0];
-      this.$router.push({ path: this.$route.fullPath, query: { year: year } }); // Add to the path
-    } else if (year === "All Years") year = null;
-    //
-    else year = parseInt(year);
-
-    // Set the selected year
-    this.selectedYear = year;
-  },
-  computed: {
-    // Map layers
-    layers() {
+    /**
+     * Array of configuration options for map layers
+     */
+    layers(): LayerConfig[] {
       return [
         {
           name: "Police District",
@@ -154,11 +230,11 @@ export default {
           type: "fill",
           aggregated: true,
           overlay: true,
-          column: "police",
+          column: "police_district",
           geoid: "DISTRICT_",
           tooltip: {
             formatter: this.tooltipFunction(
-              (d) => `Police District #${d.DISTRICT_}`
+              (d: { DISTRICT_: string }) => `Police District #${d.DISTRICT_}`
             ),
             on: "mousemove",
           },
@@ -169,11 +245,11 @@ export default {
           type: "fill",
           aggregated: true,
           overlay: true,
-          column: "council",
+          column: "council_district",
           geoid: "DISTRICT",
           tooltip: {
             formatter: this.tooltipFunction(
-              (d) => `Council District #${d.DISTRICT}`
+              (d: { DISTRICT: number }) => `Council District #${d.DISTRICT}`
             ),
             on: "mousemove",
           },
@@ -184,10 +260,12 @@ export default {
           type: "fill",
           aggregated: true,
           overlay: true,
-          column: "zip",
+          column: "zip_code",
           geoid: "zip_code",
           tooltip: {
-            formatter: this.tooltipFunction((d) => `${d.zip_code}`),
+            formatter: this.tooltipFunction(
+              (d: { zip_code: number }) => `${d.zip_code}`
+            ),
             on: "mousemove",
           },
         },
@@ -197,10 +275,12 @@ export default {
           type: "fill",
           aggregated: true,
           overlay: true,
-          column: "hood",
+          column: "neighborhood",
           geoid: "neighborhood",
           tooltip: {
-            formatter: this.tooltipFunction((d) => `${d.neighborhood}`),
+            formatter: this.tooltipFunction(
+              (d: { neighborhood: string }) => d.neighborhood
+            ),
             on: "mousemove",
           },
         },
@@ -214,7 +294,7 @@ export default {
           geoid: "district",
           tooltip: {
             formatter: this.tooltipFunction(
-              (d) => `House District #${d.district}`
+              (d: { district: number }) => `House District #${d.district}`
             ),
             on: "mousemove",
           },
@@ -229,7 +309,7 @@ export default {
           geoid: "district",
           tooltip: {
             formatter: this.tooltipFunction(
-              (d) => `Senate District #${d.district}`
+              (d: { district: number }) => `Senate District #${d.district}`
             ),
             on: "mousemove",
           },
@@ -240,10 +320,12 @@ export default {
           type: "fill",
           aggregated: true,
           overlay: true,
-          column: "school",
+          column: "school_name",
           geoid: "name",
           tooltip: {
-            formatter: this.tooltipFunction((d) => `${d.name}`),
+            formatter: this.tooltipFunction(
+              (d: { name: string }) => `${d.name}`
+            ),
             on: "mousemove",
           },
         },
@@ -262,7 +344,6 @@ export default {
           type: "circle",
           aggregated: false,
           showOnStart: true,
-          alwaysAllowed: true,
           paint: {
             "circle-radius": this.getCircleRadiusStyle(),
             "circle-color": [
@@ -283,7 +364,8 @@ export default {
             ],
           },
           tooltip: {
-            formatter: (data) => {
+            on: "mouseover",
+            formatter: (data: ShootingVictimsProperties) => {
               let aliases = {
                 W: "White (Non-Hispanic)",
                 B: "Black (Non-Hispanic)",
@@ -292,7 +374,7 @@ export default {
                 F: "Female",
                 A: "Asian",
               };
-              let fatal = data.fatal == 1 ? "Fatal" : "Nonfatal";
+              let fatal = data.fatal ? "Fatal" : "Nonfatal";
               let arrest = data.has_court_case ? "Yes" : "No";
               let text = `<div class='map-tooltip'>
               <div class="map-tooltip__title">${fatal} Shooting</div>
@@ -302,7 +384,7 @@ export default {
                       <td>${new Date(data.date).toDateString()}</td>
                     </tr>
                   <tr class="map-tooltip__line">
-                    <td>${msToTimeString(data.time)}</td>
+                    <td>${msToTimeString(data.timeInMs)}</td>
                   </tr>
                   <tr class="map-tooltip__line">
                     <td>${data.block_number} ${data.street_name}</td>
@@ -313,7 +395,7 @@ export default {
               <table class="w-100">
                 <tbody>`;
 
-              if (data.age !== "Unknown")
+              if (data.age !== null)
                 text += `<tr class="map-tooltip__line">
                     <td>${data.age} years old</td>
                   </tr>`;
@@ -430,111 +512,111 @@ export default {
           },
           tooltip: {
             formatter: this.tooltipFunction(
-              (d) => `${d.block_number} ${d.street_name}`
+              (d: { block_number: number; street_name: string }) =>
+                `${d.block_number} ${d.street_name}`
             ),
             on: "mousemove",
           },
         },
       ];
     },
-    showOverlay() {
-      return this.isLoading || !this.mapReady;
-    },
-    sources() {
+
+    /**
+     * Array of configuration options for loading source data for map
+     */
+    sources(): SourceConfig[] {
       return [
-        { name: "shootings", data: this.data, filterColumn: "id" },
+        { name: "shootings", data: this.data, filterColumn: "dc_key" },
         {
           name: "city-limits-geo",
-          url:
-            "https://services.arcgis.com/fLeGjb7u4uXqeF9q/arcgis/rest/services/City_Limits/FeatureServer/0",
+          url: "https://services.arcgis.com/fLeGjb7u4uXqeF9q/arcgis/rest/services/City_Limits/FeatureServer/0",
         },
         {
           name: "police-district-geo",
-          url:
-            "https://services.arcgis.com/fLeGjb7u4uXqeF9q/arcgis/rest/services/Boundaries_District/FeatureServer/0",
+          url: "https://services.arcgis.com/fLeGjb7u4uXqeF9q/arcgis/rest/services/Boundaries_District/FeatureServer/0",
           outFields: ["DISTRICT_"],
         },
         {
           name: "council-district-geo",
-          url:
-            "https://services.arcgis.com/fLeGjb7u4uXqeF9q/arcgis/rest/services/Council_Districts_2016/FeatureServer/0",
+          url: "https://services.arcgis.com/fLeGjb7u4uXqeF9q/arcgis/rest/services/Council_Districts_2016/FeatureServer/0",
           outFields: ["DISTRICT"],
         },
         {
           name: "zip-code-geo",
-          url:
-            "https://services.arcgis.com/fLeGjb7u4uXqeF9q/arcgis/rest/services/Philadelphia_ZCTA_2018/FeatureServer/0",
+          url: "https://services.arcgis.com/fLeGjb7u4uXqeF9q/arcgis/rest/services/Philadelphia_ZCTA_2018/FeatureServer/0",
           outFields: ["zip_code"],
         },
         {
           name: "neighborhood-geo",
-          url:
-            "https://services.arcgis.com/fLeGjb7u4uXqeF9q/arcgis/rest/services/Philly_NTAs/FeatureServer/0",
+          url: "https://services.arcgis.com/fLeGjb7u4uXqeF9q/arcgis/rest/services/Philly_NTAs/FeatureServer/0",
           outFields: ["neighborhood"],
         },
         {
           name: "senate-district-geo",
-          url:
-            "https://services.arcgis.com/fLeGjb7u4uXqeF9q/arcgis/rest/services/PA_Senate_Districts/FeatureServer/0",
+          url: "https://services.arcgis.com/fLeGjb7u4uXqeF9q/arcgis/rest/services/PA_Senate_Districts/FeatureServer/0",
           outFields: ["district"],
         },
         {
           name: "house-district-geo",
-          url:
-            "https://services.arcgis.com/fLeGjb7u4uXqeF9q/arcgis/rest/services/PA_House_Districts/FeatureServer/0",
+          url: "https://services.arcgis.com/fLeGjb7u4uXqeF9q/arcgis/rest/services/PA_House_Districts/FeatureServer/0",
           outFields: ["district"],
         },
         {
           name: "elementary-school-geo",
-          url:
-            "https://services.arcgis.com/fLeGjb7u4uXqeF9q/ArcGIS/rest/services/Philadelphia_Elementary_School_Catchments_SY_2019_2020/FeatureServer/0",
+          url: "https://services.arcgis.com/fLeGjb7u4uXqeF9q/ArcGIS/rest/services/Philadelphia_Elementary_School_Catchments_SY_2019_2020/FeatureServer/0",
           outFields: ["name"],
         },
         {
           name: "streets-geo",
-          url:
-            "https://services.arcgis.com/fLeGjb7u4uXqeF9q/arcgis/rest/services/Philadelphia_Streets/FeatureServer/0",
+          url: "https://services.arcgis.com/fLeGjb7u4uXqeF9q/arcgis/rest/services/Philadelphia_Streets/FeatureServer/0",
           outFields: ["segment_id", "street_name", "block_number"],
           whereColumn: "segment_id",
           filterColumn: "segment_id",
-          batch_size: 2000,
+          batchSize: 2000,
           formatter: {
-            segment_id: (d) => `${d}`,
+            segment_id: (d: number | string) => `${d}`,
           },
         },
       ];
     },
-    filters() {
+
+    /**
+     * Array of configuration options different map filters
+     */
+    filters(): FilterConfig[] {
       return [
         {
           name: "fatal",
           label: "Fatal shootings only",
-          getFilter: (value) => (value ? 1 : null),
+          getFilter: (value: boolean) => (value ? true : null),
           kind: "switch",
           default: false,
         },
         {
           name: "has_court_case",
           label: "Incidents with court cases",
-          getFilter: (value) => (value ? true : null),
+          getFilter: (value: boolean) => (value ? true : null),
           kind: "switch",
           default: false,
         },
         {
           name: "sex",
           label: "Gender",
-          getFilter: (value) => (d) => value.indexOf(d) !== -1,
+          getFilter: (value: string[]) => (d: string) =>
+            value.indexOf(d) !== -1,
           kind: "checkbox",
           categories: [
             { value: "M", text: "Male" },
             { value: "F", text: "Female" },
           ],
           default: ["M", "F"],
+          ncol: 1,
         },
         {
           name: "race",
           label: "Race/Ethnicity",
-          getFilter: (value) => (d) => value.indexOf(d) !== -1,
+          getFilter: (value: string[]) => (d: string) =>
+            value.indexOf(d) !== -1,
           kind: "checkbox",
           categories: [
             { value: "W", text: "White (Non-Hispanic)" },
@@ -544,11 +626,13 @@ export default {
             { value: "Other/Unknown", text: "Other/Unknown" },
           ],
           default: ["W", "B", "H", "A", "Other/Unknown"],
+          ncol: 1,
         },
         {
           name: "weekday",
           label: "Day of Week",
-          getFilter: (value) => (d) => value.indexOf(d) !== -1,
+          getFilter: (value: number[]) => (d: number) =>
+            value.indexOf(d) !== -1,
           kind: "checkbox",
           categories: [
             { value: 0, text: "Sunday" },
@@ -567,8 +651,10 @@ export default {
           label: "Time of Day",
           getFilter: (value) => [value[0], value[1] + 1],
           kind: "slider",
-          showHistogram: true,
           default: [0, 86399999], // ms since midnight
+          showHistogram: true,
+          autoLimits: false,
+          excludeMissing: false,
           tooltip: {
             formatter(msSinceMidnight) {
               return msToTimeString(msSinceMidnight);
@@ -589,6 +675,7 @@ export default {
           kind: "slider",
           showHistogram: true,
           autoLimits: true,
+          excludeMissing: false,
           tooltip: {
             formatter: (ts) =>
               this.selectedYear === null
@@ -599,41 +686,53 @@ export default {
         {
           name: "age",
           label: "Age",
-          getFilter: (value, excludeUnknown) => {
-            return (d) => {
-              let condition =
-                (parseInt(d) >= value[0]) & (parseInt(d) <= value[1]);
-              return excludeUnknown
-                ? d !== "Unknown" && condition
-                : d === "Unknown" || condition;
+          getFilter: (value, excludeMissing) => {
+            return (d: number) => {
+              let condition = d >= value[0] && d <= value[1];
+              return excludeMissing
+                ? d !== null && condition
+                : d === null || condition;
             };
           },
           kind: "slider",
-          showHistogram: true,
           default: [0, 100],
-          excludeUnknown: true,
+          showHistogram: true,
+          autoLimits: false,
+          excludeMissing: true,
           tooltip: {
-            formatter(value) {
-              return value;
-            },
+            formatter: (value) => `${value}`,
           },
         },
       ];
     },
+
+    /**
+     * Whether to show the loading overlay
+     */
+    showOverlay(): boolean {
+      return this.isLoading || !this.mapReady;
+    },
   },
   watch: {
+    /**
+     * Track the previous route when it changes
+     */
     $route: {
-      handler(to, from) {
-        this.prevRoute = from;
+      handler(to: Route, from: Route) {
+        if (from) this.prevRoute = from.path;
       },
       immediate: true,
     },
-    /* When the route changes, handle year selection */
+
+    /**
+     * When the route changes, handle year selection
+     * Only update if we are still on the main page (not coming from about/)
+     */
     "$route.query.year": {
       handler(newYear) {
         // Do nothing if we are coming from about page
         if (this.$route.path == "/about") return;
-        if (this.prevRoute.path === "/about") return;
+        if (this.prevRoute === "/about") return;
 
         // If new year is undefined, use the default year (current year)
         if (newYear === undefined) newYear = this.dataYears[0];
@@ -650,18 +749,29 @@ export default {
       },
     },
 
-    /* When the selected year changes, update it*/
+    /**
+     * When the selected year changes, update the dashboard
+     */
     async selectedYear(newYear, oldYear) {
       if (newYear === oldYear) return; // same year, do nothing
       await this.handleYearChange(newYear);
     },
   },
   methods: {
-    beforeRouteEnter(to, from, next) {
-      next((vm) => {
-        vm.prevRoute = from;
+    /**
+     * Update the prevRoute attribute before going to the next route
+     */
+    beforeRouteEnter(to: Route, from: Route, next: NavigationGuardNext) {
+      next((vm: Vue & { prevRoute?: string | null }) => {
+        vm.prevRoute = from.path;
       });
     },
+
+    /**
+     * Based on the selected year, get the circle radius style.
+     *
+     * This uses smaller circles if we are showing data for all years.
+     */
     getCircleRadiusStyle() {
       if (this.selectedYear === null) {
         return ["interpolate", ["exponential", 1.25], ["zoom"], 10, 1, 16, 9];
@@ -677,13 +787,18 @@ export default {
         ];
     },
 
-    tooltipFunction(titleFunction) {
+    /**
+     * Return a function that generates the tooltip string from the data.
+     *
+     * @param titleFunc A function that returns the tooltip title
+     */
+    tooltipFunction(titleFunc: TitleFunction): (data: any) => string {
       return (data) => {
         // Get the total count
         let count = data["count"];
 
         // The title
-        let title = titleFunction(data);
+        let title = titleFunc(data);
 
         let text = `<div class='map-tooltip'>
                     <div class="map-tooltip__title">${title}</div>
@@ -700,37 +815,53 @@ export default {
       };
     },
 
-    async fetchData(year) {
-      // Download and extract the main geojson features
-      let data = await AWSFetch(`shootings_${year}.json`);
+    /**
+     * Fetch the data for the specified year
+     *
+     * @param year the year of the data to fetch
+     * @returns the feature collection of shooting victim data
+     */
+    async fetchData(year: number): Promise<ShootingVictimsGeoJson> {
+      // Fetch the data from AWS
+      const url = "https://gun-violence-dashboard.s3.amazonaws.com/";
+      const response = await fetch(url + `shootings_test_${year}.json`);
+      let data = await response.json();
 
-      // Add additional features
-      let dt;
+      // Format for the time
       const parseTime = timeParse("%Y/%m/%d %H:%M:%S");
-      data.features.forEach(function(d, i) {
-        // Get a date object
-        dt = parseTime(d.properties["date"]);
 
-        d.properties["date"] = dt.getTime();
-        d.properties["weekday"] = dt.getDay();
-        d.properties["time"] = getMsSinceMidnight(dt);
-        d.properties["id"] = parseInt(`${year}${i}`);
-      });
+      // Loop over features
+      data.features.forEach(
+        (d: Feature<Point | null, ShootingVictimsProperties>) => {
+          // Parse the date
+          let dt = parseTime(d.properties["date"]);
+
+          // Add additional date properties
+          if (dt) {
+            let ms = dt.getTime();
+            d.properties["dateInMs"] = ms;
+            d.properties["timeInMs"] = getMsSinceMidnight(ms);
+            d.properties["weekday"] = dt.getDay();
+          }
+        }
+      );
 
       return data;
     },
 
-    handleMapReady() {
-      this.mapReady = true;
-    },
-
-    async getDataForYear(year) {
+    /**
+     * Return data from the `store` cache or fetch it
+     */
+    async getDataForYear(year: number): Promise<ShootingVictimsGeoJson> {
       if (this.store[year] === undefined) return await this.fetchData(year);
       else return this.store[year];
     },
 
-    /* Handle the change in year */
-    async handleYearChange(newYear) {
+    /**
+     * The main function to update the dashboard when the year changes
+     * @param newYear Display data for the specified value
+     */
+    async handleYearChange(newYear: number | null) {
       // Show the loading overlay
       this.isLoading = true;
 
@@ -747,14 +878,17 @@ export default {
           let year = this.dataYears[i];
           data_yr = await this.getDataForYear(year);
           if (this.store[year] === undefined) this.store[year] = data_yr;
+        }
 
-          // Save
-          if (i === 0) data = Object.assign({}, data_yr);
-          else data.features = data.features.concat(data_yr.features);
+        // Now combine each year into a single Feature Collection
+        data = Object.assign({}, this.store[this.dataYears[0]]);
+        for (let i = 1; i < this.dataYears.length; i++) {
+          let year = this.dataYears[i];
+          data.features.concat(this.store[year].features);
         }
       }
 
-      // Save it
+      // Save
       this.data = data;
       this.filteredFeatures = this.data.features;
 
@@ -765,43 +899,51 @@ export default {
         if (dashboard === undefined) throw Error("Dashboard not found");
 
         // Reset all the filters to default values
-        dashboard.resetDashboard();
+        //dashboard.resetDashboard();
 
         // Wait for reset to propagate
         this.$nextTick(() => {
           // Set the filtered data
-          this.filteredFeatures = dashboard.filteredData;
+          //this.filteredFeatures = dashboard.filteredData;
 
           // Update the map
-          let map = dashboard.$refs.FilterableMap;
-          if (map.getLayer("Point locations")) {
-            map.setPaintProperty(
-              "Point locations",
-              "circle-radius",
-              this.getCircleRadiusStyle()
-            );
-          }
+          //let map = dashboard.$refs.FilterableMap;
+          // if (map.getLayer("Point locations")) {
+          //   map.setPaintProperty(
+          //     "Point locations",
+          //     "circle-radius",
+          //     this.getCircleRadiusStyle()
+          //   );
+          // }
 
           // Update sliders in the dashboard
-          dashboard.setDefaultSliderRanges();
+          //dashboard.setDefaultSliderRanges();
 
           // Update variables for the header message
-          this.updateHeaderMessage(this.filteredFeatures);
+          if (this.filteredFeatures !== null)
+            this.updateHeaderMessage(this.filteredFeatures);
 
           // Done loading!
           this.isLoading = false;
         });
       });
     },
-    /* Set the variables for the header message */
-    updateHeaderMessage(data) {
+
+    /**
+     * Set the variables for the header message
+     */
+    updateHeaderMessage(data: ShootingVictimsFeatures) {
       // Set the max date
-      this.latestDataDate = new Date(max(data, (d) => d.properties.date));
+      let maxDateInMs = max(data, (d) => d.properties.dateInMs);
+      if (maxDateInMs !== undefined)
+        this.latestDataDate = new Date(maxDateInMs);
 
       // Set the fatal/nonfatal counts
-      this.fatalCount = data.filter((el) => el.properties["fatal"] == 1).length;
+      this.fatalCount = data.filter(
+        (el) => el.properties.fatal === true
+      ).length;
       this.nonfatalCount = data.length - this.fatalCount;
     },
   },
-};
+});
 </script>

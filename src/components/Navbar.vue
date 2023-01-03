@@ -67,7 +67,9 @@
 </template>
 
 <script>
-export default {
+import { defineComponent } from "vue";
+
+export default defineComponent({
   props: ["dataYears", "selectedYear", "showOverlay"],
   data() {
     return { value: null };
@@ -81,7 +83,7 @@ export default {
       this.value = newYear;
     },
   },
-};
+});
 </script>
 
 <style>
@@ -93,7 +95,6 @@ export default {
   color: #b2beb5;
   background-color: #353d42;
 }
-
 /* Back button */
 .back-to-app {
   display: flex;
@@ -101,23 +102,19 @@ export default {
   align-items: center;
   justify-content: flex-end;
 }
-
 .back-to-app:hover {
   background-color: #353d42;
   border-color: #fff;
 }
-
 /* Year dropdown */
 #year-select {
   background-color: transparent !important;
   border-width: 0px !important;
 }
-
 #year-select {
   width: 0 !important;
   min-width: 0 !important;
 }
-
 #year-select-wrapper {
   margin-left: 0.5rem;
   margin-top: 5px;
@@ -127,14 +124,12 @@ export default {
   margin-bottom: 5px !important;
   overflow: visible !important;
 }
-
 .v-list-item__title {
   font-size: 1rem !important;
   line-height: 1.6rem !important;
   font-weight: normal !important;
   overflow: visible !important;
 }
-
 .year-message-content {
   display: flex;
   align-items: flex-end;

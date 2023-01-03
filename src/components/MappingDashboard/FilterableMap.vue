@@ -312,7 +312,7 @@ export default {
     Query the data source
     -------*/
     async queryDataSource(source) {
-      let batch_size = source.batch_size;
+      let batch_size = source.batchSize;
       let data;
 
       // Single query

@@ -66,58 +66,76 @@
   </div>
 </template>
 
-<script>
+<script lang="ts">
+import { defineComponent } from "vue";
 import { max } from "d3-array";
 import { format } from "d3-format";
 import { githubFetch } from "@/utils/io";
+import { HomicideTotals } from "@/types/HomicideTotals";
 
-export default {
-  props: [
-    "fatal",
-    "nonfatal",
-    "selectedYear",
-    "currentYear",
-    "minYear",
-    "latestDataDate",
-    "showOverlay",
-  ],
+export default defineComponent({
+  props: {
+    fatal: { type: Boolean },
+    nonfatal: { type: Boolean },
+    selectedYear: { type: Number, required: true },
+    currentYear: { type: Number, required: true },
+    minYear: { type: Number, required: true },
+    latestDataDate: { type: Date },
+    showOverlay: { type: Boolean, default: true },
+  },
   data() {
-    return { homicideData: null };
+    return { homicideData: {} as HomicideTotals };
   },
   async created() {
-    // Load the data
     this.homicideData = await githubFetch("homicide_totals.json");
   },
   computed: {
-    /* Formatted homicide total for the selected year */
-    homicideTotal() {
+    /**
+     * Formatted YTD homicide total for the selected year
+     */
+    homicideTotal(): string | null {
       if (this.homicideData) {
-        return format(",.0f")(this.getHomicideTotal(this.selectedYear));
+        let ytd = this.getHomicideTotal(this.selectedYear);
+        if (ytd) return format(",.0f")(ytd);
+        else return null;
       }
       return null;
     },
-    /* Latest year with homicide data */
+    /**
+     * Latest year with homicide data
+     */
     latestHomicideYear() {
-      return max(Object.keys(this.homicideData));
+      // Data years as int
+      let years = Object.keys(this.homicideData).map((d) => parseInt(d));
+      return max(years);
     },
-    /* Formatted YoY in the homicide total */
-    homicideChange() {
-      if (this.homicideTotal) {
-        // Calculate the year-over-year change
-        let thisYear = this.homicideTotal;
-        let lastYear = this.getHomicideTotal(this.selectedYear - 1);
-        let change = 100 * (thisYear / lastYear - 1);
 
-        // Format the change
-        if (change > 0) {
-          return `a ${change.toFixed(0)}% increase`;
-        } else if (change < 0) {
-          return `a ${Math.abs(change).toFixed(0)}% decrease`;
-        } else return "no change";
+    /**
+     * Formatted year-over-year change in homcide total
+     */
+    homicideChange(): string | null {
+      // Make sure we have a YTD homicide for this year
+      if (this.homicideTotal !== null) {
+        // This year and last year
+        let thisYear = this.getHomicideTotal(this.selectedYear);
+        let lastYear = this.getHomicideTotal(this.selectedYear - 1);
+        if (thisYear !== null && lastYear !== null) {
+          let change = 100 * (thisYear / lastYear - 1);
+
+          // Format the change
+          if (change > 0) {
+            return `a ${change.toFixed(0)}% increase`;
+          } else if (change < 0) {
+            return `a ${Math.abs(change).toFixed(0)}% decrease`;
+          } else return "no change";
+        }
       }
       return null;
     },
-    /* Formatted latest date */
+
+    /**
+     * Formated latest date
+     */
     formattedlatestDataDate() {
       if (this.latestDataDate) {
         return this.formatDate(this.latestDataDate);
@@ -126,8 +144,10 @@ export default {
     },
   },
   methods: {
-    /* Get the homicide total for a given year */
-    getHomicideTotal(year) {
+    /**
+     * Get the homicide total for a given year
+     */
+    getHomicideTotal(year: number) {
       // Selected year is defined
       if (this.selectedYear !== undefined) {
         // When selected year is null, we're doing all years
@@ -135,8 +155,11 @@ export default {
           // Sum up homicides from all years
           let total = 0;
           for (let yr = this.minYear; yr <= this.currentYear; yr++) {
-            if (yr == this.currentYear) total += this.homicideData[yr].ytd;
-            else total += this.homicideData[yr].annual;
+            let d = this.homicideData[yr];
+            if (d) {
+              if (d.annual === null) total += d.ytd;
+              else total += d.annual;
+            }
           }
           return total;
         }
@@ -157,7 +180,7 @@ export default {
       });
     },
   },
-};
+});
 </script>
 
 <style>
