@@ -9,73 +9,151 @@
   </div>
 </template>
 
-<script>
+<script lang="ts">
+import { defineComponent } from "vue";
+
+// d3 module
 import { scaleLinear } from "d3-scale";
 import { axisBottom } from "d3-axis";
 import { select } from "d3-selection";
 import { format } from "d3-format";
-const d3ScaleChromatic = require("d3-scale-chromatic");
+import * as d3ScaleChromatic from "d3-scale-chromatic";
 
-export default {
+interface LegendOptions {
+  colorScheme: string;
+  range: number[];
+  domain: [number, number];
+  title: string;
+}
+
+interface Margin {
+  top: number;
+  left: number;
+  right: number;
+  bottom: number;
+}
+
+type indexable = { [index: string]: any };
+
+export default defineComponent({
   name: "MapLegend",
   props: {
+    /**
+     * Width of the legend
+     */
     width: {
       type: Number,
       required: true,
     },
+
+    /**
+     * Height of the colorbar
+     */
     barHeight: { type: Number, required: true },
+
+    /**
+     * Size of the ticks
+     */
     tickSize: { type: Number, default: 12 },
+
+    /**
+     * Format of ticks
+     */
     tickFormat: { type: String, default: ",.0f" },
   },
   data() {
     return {
+      /**
+       * Currently visible?
+       */
       visible: false,
+
+      /**
+       * Legend options
+       */
       options: {
         colorScheme: "Reds",
         range: [0, 1],
         domain: [0, 1],
         title: "Total",
-      },
-      margin: { right: 20, bottom: 40, left: 10, top: 5 },
+      } as LegendOptions,
+
+      /**
+       * Margin
+       */
+      margin: { right: 20, bottom: 40, left: 10, top: 5 } as Margin,
     };
   },
+
   computed: {
-    height() {
+    /**
+     * Total height of the SVG container
+     */
+    height(): number {
       return this.barHeight + this.margin.top + this.margin.bottom;
     },
-    colorScale() {
+
+    /**
+     * Colorbar scale
+     */
+    colorScale(): any {
       return scaleLinear()
         .domain(this.options.domain)
         .range(this.options.range);
     },
-    axisScale() {
+
+    /**
+     * The d3 axis scale
+     */
+    axisScale(): any {
       return scaleLinear()
         .domain(this.colorScale.domain())
         .range([this.margin.left, this.width - this.margin.right]);
     },
   },
+
   methods: {
-    show({ colorScheme, range, domain, title }) {
+    /**
+     * Show the legend with the specified options
+     */
+    show(options: LegendOptions) {
+      // Make it visible
       this.visible = true;
+
+      // Set the options
       this.options = {
-        colorScheme: colorScheme,
-        domain: domain,
-        range: range,
-        title: title,
+        colorScheme: options.colorScheme,
+        domain: options.domain,
+        range: options.range,
+        title: options.title,
       };
 
+      // Wait for update and then refresh
       this.$nextTick(() => {
         this.refreshLegend();
       });
     },
+
+    /**
+     * Hide the legend
+     */
     hide() {
       this.visible = false;
     },
+
+    /**
+     * Refresh the legend
+     */
     refreshLegend() {
+      // Remove and then add it
       this.removeLegend();
       this.addLegend();
     },
-    addAxis(g) {
+
+    /**
+     * Add the axis to the svg selection
+     */
+    addAxis(g: any) {
       return g
         .attr("class", `x-axis`)
         .attr("transform", `translate(0,${this.height - this.margin.bottom})`)
@@ -83,15 +161,24 @@ export default {
           axisBottom(this.axisScale)
             .tickValues(this.options.domain)
             .tickSize(this.tickSize)
+            // @ts-expect-error: d3 issue
             .tickFormat(format(this.tickFormat))
         );
     },
+
+    /**
+     * Remove the legend
+     */
     removeLegend() {
       // Remove existing
       let svg = select("#map-legend-canvas");
       svg.selectAll("defs").remove();
       svg.selectAll("g").remove();
     },
+
+    /**
+     * Add the legend
+     */
     addLegend() {
       let svg = select("#map-legend-canvas");
       const defs = svg.append("defs");
@@ -100,20 +187,19 @@ export default {
         .append("linearGradient")
         .attr("id", "linear-gradient");
 
+      let key = `interpolate${this.options.colorScheme}`;
       linearGradient
         .selectAll("stop")
         .data(
-          this.colorScale.ticks().map((t, i, n) => ({
+          this.colorScale.ticks().map((t: number, i: number, n: number[]) => ({
             offset: `${(100 * i) / n.length}%`,
-            color: d3ScaleChromatic[`interpolate${this.options.colorScheme}`](
-              this.colorScale(t)
-            ),
+            color: (d3ScaleChromatic as indexable)[key](this.colorScale(t)),
           }))
         )
         .enter()
         .append("stop")
-        .attr("offset", (d) => d.offset)
-        .attr("stop-color", (d) => d.color);
+        .attr("offset", (d: any) => d.offset)
+        .attr("stop-color", (d: any) => d.color);
 
       svg
         .append("g")
@@ -132,7 +218,7 @@ export default {
       svg.append("g").call(this.addAxis);
     },
   },
-};
+});
 </script>
 
 <style>

@@ -66,59 +66,119 @@
   </div>
 </template>
 
-<script>
+<script lang="ts">
+import { defineComponent, PropType } from "vue";
 import { max } from "d3-array";
 import { format } from "d3-format";
 import { githubFetch } from "@/utils/io";
+import { HomicideTotals } from "@/types/HomicideTotals";
 
-export default {
-  props: [
-    "fatal",
-    "nonfatal",
-    "selectedYear",
-    "currentYear",
-    "minYear",
-    "latestDataDate",
-    "showOverlay",
-  ],
-  data() {
-    return { homicideData: null };
+export default defineComponent({
+  props: {
+    /**
+     * The number of fatal shootings in the selected year
+     */
+    fatal: { type: Number },
+    /**
+     * The number of nonfatal shootings in the selected year
+     */
+    nonfatal: { type: Number },
+
+    /**
+     * The selected year for the data
+     */
+    selectedYear: { type: Number as PropType<number | null> },
+
+    /**
+     * The current year
+     */
+    currentYear: { type: Number, required: true },
+
+    /**
+     * The first year we have data for
+     */
+    minYear: { type: Number, required: true },
+
+    /**
+     * The latest date we have data for
+     */
+    latestDataDate: { type: Date as PropType<Date | null> },
+
+    /**
+     * The
+     */
+    showOverlay: { type: Boolean, default: true },
   },
+  data() {
+    return {
+      /**
+       * The annual/YTD homicide total data
+       */
+      homicideData: undefined as HomicideTotals | undefined,
+    };
+  },
+
+  /**
+   * When created, load the annual/YTD homicide totals
+   */
   async created() {
-    // Load the data
     this.homicideData = await githubFetch("homicide_totals.json");
   },
   computed: {
-    /* Formatted homicide total for the selected year */
-    homicideTotal() {
+    /**
+     * Formatted YTD homicide total for the selected year
+     */
+    homicideTotal(): string | null {
+      // Specific year
+      if (this.homicideData && this.selectedYear) {
+        let ytd = this.getHomicideTotal(this.selectedYear);
+        if (ytd) return format(",.0f")(ytd);
+      }
+      // All years
+      else if (this.selectedYear === null) {
+        let total = this.getTotalHomicideCount();
+        if (total) return format(",.0f")(total);
+      }
+      return null;
+    },
+    /**
+     * Latest year with homicide data
+     */
+    latestHomicideYear(): number | undefined | null {
+      // Data years as int
       if (this.homicideData) {
-        return format(",.0f")(this.getHomicideTotal(this.selectedYear));
-      }
-      return null;
+        let years = Object.keys(this.homicideData).map((d) => parseInt(d));
+        return max(years);
+      } else return null;
     },
-    /* Latest year with homicide data */
-    latestHomicideYear() {
-      return max(Object.keys(this.homicideData));
-    },
-    /* Formatted YoY in the homicide total */
-    homicideChange() {
-      if (this.homicideTotal) {
-        // Calculate the year-over-year change
-        let thisYear = this.homicideTotal;
-        let lastYear = this.getHomicideTotal(this.selectedYear - 1);
-        let change = 100 * (thisYear / lastYear - 1);
 
-        // Format the change
-        if (change > 0) {
-          return `a ${change.toFixed(0)}% increase`;
-        } else if (change < 0) {
-          return `a ${Math.abs(change).toFixed(0)}% decrease`;
-        } else return "no change";
+    /**
+     * Formatted year-over-year change in homcide total
+     */
+    homicideChange(): string | null {
+      // Make sure we have a YTD homicide for this year
+      if (this.homicideTotal && this.selectedYear) {
+        // This year and last year
+        let thisYear = this.getHomicideTotal(this.selectedYear);
+        let lastYear = this.getHomicideTotal(this.selectedYear - 1);
+        if (thisYear !== null && lastYear !== null) {
+          let change = 100 * (thisYear / lastYear - 1);
+
+          // Format the change
+          if (change > 0) {
+            return `a ${change.toFixed(0)}% increase`;
+          } else if (change < 0) {
+            return `a ${Math.abs(change).toFixed(0)}% decrease`;
+          } else return "no change";
+        }
       }
       return null;
     },
-    /* Formatted latest date */
-    formattedlatestDataDate() {
+
+    /**
+     * Formated latest date
+     */
+    formattedlatestDataDate(): string | null {
       if (this.latestDataDate) {
         return this.formatDate(this.latestDataDate);
       }
@@ -126,41 +186,64 @@ export default {
     },
   },
   methods: {
-    /* Get the homicide total for a given year */
-    getHomicideTotal(year) {
+    /**
+     * Get total homicides
+     */
+    getTotalHomicideCount() {
+      if (this.homicideData) {
+        // Sum up homicides from all years
+        let total = 0;
+        for (let yr = this.minYear; yr <= this.currentYear; yr++) {
+          let d = this.homicideData[yr];
+          if (d) {
+            if (d.annual === null) total += d.ytd;
+            else total += d.annual;
+          }
+        }
+        return total;
+      }
+      return null;
+    },
+    /**
+     * Get the homicide total for a given year
+     */
+    getHomicideTotal(year: number) {
+      // Do nothing yet (this shouldn't happen)
+      if (!this.homicideData) return null;
+
       // Selected year is defined
       if (this.selectedYear !== undefined) {
-        // When selected year is null, we're doing all years
-        if (this.selectedYear === null) {
-          // Sum up homicides from all years
-          let total = 0;
-          for (let yr = this.minYear; yr <= this.currentYear; yr++) {
-            if (yr == this.currentYear) total += this.homicideData[yr].ytd;
-            else total += this.homicideData[yr].annual;
-          }
-          return total;
-        }
-
         // Either return YTD for current year or annual for past year
         if (this.selectedYear == this.latestHomicideYear)
           return this.homicideData[year].ytd;
         else return this.homicideData[year].annual;
       } else return null;
     },
-    formatNumber(d) {
-      return format(",.0f")(d);
+
+    /**
+     * Format the input number into a zero-decimal integer
+     */
+    formatNumber(d: number | undefined): string {
+      if (typeof d == "number") return format(",.0f")(d);
+      else return "";
     },
-    formatDate(dt) {
-      return dt.toLocaleString("default", {
-        month: "short",
-        day: "numeric",
-      });
+
+    /**
+     * Format the input date into short numeric format
+     */
+    formatDate(dt: Date | undefined) {
+      if (dt instanceof Date)
+        return dt.toLocaleString("default", {
+          month: "short",
+          day: "numeric",
+        });
+      else return "";
     },
   },
-};
+});
 </script>
 
-<style>
+<style scoped>
 /* Colors for specific  */
 .nonfatal {
   color: #e5dc8e;

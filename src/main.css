@@ -1,0 +1,56 @@
+/* App-wide settings */
+#app {
+  font-family: Avenir, Helvetica, Arial, sans-serif;
+  color: #fff !important;
+  background-color: #353d42;
+  padding-top: 0.5rem !important;
+  padding-bottom: 6.25rem;
+  overflow-x: hidden;
+  min-height: 100vh;
+}
+
+@media screen and (max-width: 991.98px) {
+  #app {
+    padding-top: 1.25rem !important;
+  }
+}
+
+/* Hide the social share */
+.addthis-smartlayers {
+  display: none !important;
+}
+
+/* Help message */
+.help-message {
+  font-weight: normal !important;
+  padding-bottom: 1rem;
+}
+
+/* Tooltip styling */
+.map-tooltip {
+  color: black !important;
+  font-size: 0.9rem;
+}
+
+.map-tooltip__line {
+  border-bottom: 1px solid #f0f0f0;
+}
+.map-tooltip__line td {
+  padding: 0 7px 0 7px;
+  text-align: center;
+}
+.map-tooltip {
+  padding-bottom: 0.75rem !important;
+}
+.map-tooltip__line-header {
+  font-weight: bold;
+  text-align: left !important;
+}
+
+.map-tooltip__title {
+  padding: 0.3125rem !important;
+  margin-bottom: 0.3125rem;
+  border-bottom: 1px solid #cdcdcd;
+  text-align: center;
+  font-weight: bold;
+}

@@ -86,24 +86,57 @@
   </v-dialog>
 </template>
 
-<script>
-export default {
-  props: ["overlayLayerNames"],
+<script lang="ts">
+import { defineComponent, PropType } from "vue";
+
+export default defineComponent({
+  props: {
+    /**
+     * The names of the overlay layers on the map
+     */
+    overlayLayerNames: { type: Array as PropType<string[]>, default: () => [] },
+  },
   data() {
     return {
-      downloadDialog: false, // Is the dialog open?
-      selectionRadio: 0, // Which selection radio button is selected?
-      selectionGroups: ["Include Filters", "Ignore Filters"], // Includes or excludes filters
-      formatRadio: 0, // Which format radio button is selected?
-      formatGroups: ["CSV", "GeoJSON"], // CSV or GeoJSON
-      selectedAgg: null, // Is there a selected agg layer?
+      /**
+       * Is the dialog open?
+       */
+      downloadDialog: false,
+
+      /**
+       * Which selection radio button is selected?
+       */
+      selectionRadio: 0,
+
+      /**
+       * Includes or excludes filters
+       */
+      selectionGroups: ["Include Filters", "Ignore Filters"],
+
+      /**
+       * Which format radio button is selected?
+       */
+      formatRadio: 0,
+
+      /**
+       * CSV or GeoJSON
+       */
+      formatGroups: ["CSV", "GeoJSON"],
+
+      /**
+       * Is there a selected agg layer?
+       */
+      selectedAgg: null,
     };
   },
   computed: {
-    aggLayerItems() {
+    /**
+     * Overlay items
+     */
+    aggLayerItems(): { value: string; text: string }[] {
       let out = [];
-      for (let key in this.aggLayers) {
-        out.push({ value: key, text: this.aggLayers[key] });
+      for (let key in this.overlayLayerNames) {
+        out.push({ value: key, text: this.overlayLayerNames[key] });
       }
       return out;
     },
@@ -131,7 +164,7 @@ export default {
       this.downloadDialog = false;
     },
   },
-};
+});
 </script>
 
 <style>

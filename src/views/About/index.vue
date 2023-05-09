@@ -1,7 +1,7 @@
 <template>
   <div>
     <!-- Top app navbar -->
-    <Navbar :dataYears="dataYears" />
+    <navbar :data-years="dataYears" />
 
     <!-- About page -->
     <div class="container about-page">
@@ -146,66 +146,26 @@
   </div>
 </template>
 
-<script>
-import { blob } from "d3-fetch";
-import Navbar from "@/components/Navbar";
+<script lang="ts">
+import { defineComponent } from "vue";
+import Navbar from "@/components/Navbar.vue";
 
-export default {
-  props: ["dataYears"],
+export default defineComponent({
+  props: { dataYears: { type: Array, required: true } },
   components: { Navbar },
-  data() {
-    return {
-      minYear: 2015,
-      currentYear: new Date().getFullYear(),
-      courtsDataUrl:
-        "https://raw.githubusercontent.com/PhiladelphiaController/gun-violence-dashboard-data/master/gun_violence_dashboard_data/data/raw/scraped_courts_data.json",
-    };
-  },
   mounted() {
+    // Convert icons explicitly
     if (window.FontAwesome) window.FontAwesome.dom.i2svg();
   },
-  methods: {
-    getShootingDataUrl(year) {
-      return `https://raw.githubusercontent.com/PhiladelphiaController/gun-violence-dashboard-data/master/gun_violence_dashboard_data/data/processed/shootings_${year}.json`;
-    },
-    downloadItem({ url, label }) {
-      blob(url)
-        .then((blob) => {
-          const link = document.createElement("a");
-          link.href = URL.createObjectURL(blob);
-          link.download = label;
-          link.click();
-          URL.revokeObjectURL(link.href);
-        })
-        .catch(console.error);
-    },
-  },
-};
+});
 </script>
 
-<style>
+<style scoped>
 .section {
-  margin-top: 40px;
+  margin-top: 60px;
 }
 .url-break {
   word-wrap: break-word;
-}
-.shooting-victims-download div:not(:last-child) {
-  margin-right: 1.5rem;
-}
-.shooting-victims-download {
-  display: flex;
-  flex-direction: row;
-}
-
-@media only screen and (max-width: 767px) {
-  .shooting-victims-download {
-    display: flex;
-    flex-direction: column;
-  }
-  .shooting-victims-download:nth-child(2) {
-    margin-top: 1rem;
-  }
 }
 
 .about-page {
