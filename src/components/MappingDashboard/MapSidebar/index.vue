@@ -24,17 +24,11 @@
       <!-- Download and reset button -->
       <div
         id="buttons-section"
-        class="
-          d-flex
-          justify-content-center
-          flex-column
-          align-items-center
-          mt-5
-        "
+        class="d-flex justify-content-center flex-column align-items-center mt-5"
       >
         <!-- Download data -->
-        <DownloadButton
-          :overlayLayerNames="overlayLayerNames"
+        <download-button
+          :overlay-layer-names="overlayLayerNames"
           @download-data="$emit('download-data', $event)"
         />
 
@@ -61,16 +55,19 @@
       <!-- Map Layers ------------------------->
       <!--------------------------------------->
       <v-container class="sidebar__layers">
-        <div class="map-layers__inner" v-if="layerNames.length > 1">
+        <div class="map-layers__inner" v-if="toggleableLayerNames.length > 1">
           <div class="text-center mt-3 sidebar-subtitle">Map Layers</div>
           <v-divider class="my-divider" />
 
           <!-- Checkboxes for layers -->
-          <v-hover v-for="layerName in layerNames" :key="layerName">
+          <v-hover
+            v-slot="{ hover }"
+            v-for="layerName in toggleableLayerNames"
+            :key="layerName"
+          >
             <v-checkbox
-              slot-scope="{ hover }"
-              :value="layerName"
               v-model="selectedLayers"
+              :value="layerName"
               color="#7ab5e5"
               hide-details
               multiple
@@ -150,12 +147,7 @@
           <v-expansion-panel class="dark-theme">
             <v-expansion-panel-header
               hide-actions
-              class="
-                d-flex
-                flex-column
-                justify-content-center
-                align-items-start
-              "
+              class="d-flex flex-column justify-content-center align-items-start"
             >
               <v-switch
                 v-for="(item, i) in switchFilters"
@@ -191,11 +183,11 @@
             </v-expansion-panel-header>
             <v-expansion-panel-content class="my-checkbox-wrapper">
               <v-hover
+                v-slot="{ hover }"
                 v-for="category in item.categories"
                 :key="`${item.name}-${category.value}`"
               >
                 <v-checkbox
-                  slot-scope="{ hover }"
                   :value="category.value"
                   v-model="selectedValues[item.name]"
                   :style="getMinWidthForCheckboxFilter(item.ncol || 1)"
@@ -277,12 +269,12 @@
               <v-switch
                 v-if="
                   Object.prototype.hasOwnProperty.call(
-                    excludeUnknownValues,
+                    excludeMissingValues,
                     item.name
                   )
                 "
                 class="mt-5 pt-5"
-                v-model="excludeUnknownValues[item.name]"
+                v-model="excludeMissingValues[item.name]"
                 label="Exclude unknown"
                 :ripple="false"
                 color="#7ab5e5"
@@ -299,10 +291,20 @@
   </div>
 </template>
 
-<script>
+<script lang="ts">
+import { defineComponent, PropType } from "vue";
+
 // Internal
-import SliderHistogramChart from "./SliderHistogramChart";
-import DownloadButton from "./DownloadButton";
+import SliderHistogramChart from "./SliderHistogramChart.vue";
+import DownloadButton from "./DownloadButton.vue";
+
+// Types
+import {
+  FilterConfig,
+  CheckboxFilterConfig,
+  SliderFilterConfig,
+  SwitchFilterConfig,
+} from "@/types/Filters";
 
 // External
 import VueSlider from "vue-slider-component";
@@ -310,10 +312,10 @@ import $ from "jquery";
 import { format } from "d3-format";
 import qs from "qs";
 
-/*------ 
-Decode the query string
--------*/
-function queryStringDecoder(str, decoder, charset) {
+/**
+ * Utility to decode the query string
+ */
+function queryStringDecoder(str: string, decoder: any, charset: string) {
   const strWithoutPlus = str.replace(/\+/g, " ");
   if (charset === "iso-8859-1") {
     // unescape never throws, no try...catch needed:
@@ -324,7 +326,7 @@ function queryStringDecoder(str, decoder, charset) {
     return parseFloat(str);
   }
 
-  const keywords = {
+  const keywords: { [index: string]: any } = {
     true: true,
     false: false,
     null: null,
@@ -342,36 +344,140 @@ function queryStringDecoder(str, decoder, charset) {
   }
 }
 
-export default {
+// Make objects indexable
+type indexable = { [index: string]: any };
+
+export default defineComponent({
   components: { VueSlider, SliderHistogramChart, DownloadButton },
-  props: [
-    "filters",
-    "layerNamesDefault",
-    "alwaysAllowedLayers",
-    "layerNames",
-    "overlayLayerNames",
-    "filteredSize",
-    "pointsOnMap",
-    "histograms",
-    "defaultOverlayOpacity",
-    "showOverlay",
-    "markerTitle",
-    "markerShortTitle",
-    "mapReady",
-  ],
+  props: {
+    /**
+     * Array of configuration options different map filters
+     */
+    filters: { type: Array as PropType<FilterConfig[]>, required: true },
+
+    /**
+     * The default toggled layer names (shown on start)
+     */
+    defaultToggledLayerNames: {
+      type: Array as PropType<string[]>,
+      default: () => [],
+    },
+
+    /**
+     * The names of the toggeable layers on the map
+     */
+    toggleableLayerNames: {
+      type: Array as PropType<string[]>,
+      default: () => [],
+    },
+
+    /**
+     * The names of the overlay layers on the map
+     */
+    overlayLayerNames: { type: Array as PropType<string[]>, default: () => [] },
+
+    /**
+     * Total size of filtered data set
+     */
+    filteredSize: { type: Number, required: true },
+
+    /**
+     * Number of points on the map (non-null geometry)
+     */
+    pointsOnMap: { type: Number, required: true },
+
+    /**
+     * Keep track of histograms of each dimension
+     */
+    histograms: { type: Object, required: true },
+
+    /**
+     * Default opacity value for overlay layers
+     */
+    defaultOverlayOpacity: { type: Number, default: 50 },
+
+    /**
+     * Whether to show the overlay layer
+     */
+    showOverlay: { type: Boolean, required: true },
+
+    /**
+     * Title to use for markers
+     */
+    markerTitle: { type: String, required: true },
+
+    /**
+     * Short title to use for markers
+     */
+    markerShortTitle: { type: String, required: true },
+
+    /**
+     * Is the map ready
+     */
+    mapReady: { type: Boolean, required: true },
+  },
+
   data() {
     return {
-      expandedPanels: [], // Which sidebar panels are expanded
-      overlayOpacity: 50, // Opacity of overlay layer
-      selectedLayers: undefined, // Selected layers
-      selectedOverlay: null, // Selected aggregation layer
-      selectedValues: {}, // Selected values for each filter
-      excludeUnknownValues: {}, // Whether to exclude unknown values
-      tooltipPlacements: {}, // Placement of tooltip for each slider filter
-      initialQuery: {}, // Save any initial query string parameters
-      isDefault: {}, // Whether the filter is set to its default
+      /**
+       * Which sidebar panels are expanded
+       */
+      expandedPanels: [] as number[],
+
+      /**
+       * Opacity of overlay layer
+       */
+      overlayOpacity: 50,
+
+      /**
+       * Selected layers
+       */
+      selectedLayers: [] as string[],
+
+      /**
+       * Selected overlay aggregation layer
+       */
+      selectedOverlay: null as null | string,
+
+      /**
+       * Selected values for each filter
+       */
+      selectedValues: {} as indexable,
+
+      /**
+       * Whether to exclude unknown values
+       */
+      excludeMissingValues: {} as indexable,
+
+      /**
+       * Placement of tooltip for each slider filter
+       */
+      tooltipPlacements: {} as indexable,
+
+      /**
+       * Save any initial query string parameters
+       */
+      initialQuery: {} as indexable,
+
+      /**
+       * Whether the filter is set to its default
+       */
+      isDefault: {} as indexable,
+
+      /**
+       * Has an "Only" button been clicked
+       */
+      onlyClick: false,
     };
   },
+
+  /**
+   * When mounted:
+   *  - Set defaults
+   *  - Parse initial query string
+   *  - Initialize filters and sliders
+   *  - Set default selected layers
+   */
   mounted() {
     // Set default opacity for overlays
     this.overlayOpacity = this.defaultOverlayOpacity;
@@ -384,16 +490,19 @@ export default {
     this.initializeSliders();
 
     // Set the default selected layer
-    this.selectedLayers = this.layerNamesDefault;
+    this.selectedLayers = this.defaultToggledLayerNames;
   },
+
   watch: {
-    /*------ 
-    When the map is ready, update based on the initial query string
-    -------*/
-    mapReady(newValue) {
-      if (newValue) {
-        // Initial filters
+    /**
+     * When the map is ready, update based on the initial query string
+     */
+    mapReady(isReady) {
+      if (isReady) {
+        // Get the initial filters
         let filters = this.initialQuery["f"];
+
+        // Set any initial filters
         if (filters) {
           for (let f in filters) {
             this.selectedValues[f] = filters[f];
@@ -402,10 +511,10 @@ export default {
         }
 
         // Initial exclude unknown values
-        let exclude = this.initialQuery["excludeUnknown"];
+        let exclude = this.initialQuery["excludeMissing"];
         if (exclude) {
           for (let e in exclude) {
-            this.excludeUnknownValues[e] = true;
+            this.excludeMissingValues[e] = true;
             this.handleFilterChange(e, this.selectedValues[e]);
           }
         }
@@ -420,24 +529,30 @@ export default {
       }
     },
 
-    /*------ 
-    Handle updates to the selected layers
-    -------*/
+    /**
+     * Watch for updates to the selected layers
+     */
     selectedLayers(nextValue, prevValue) {
-      // No updates needed the first time (values are default)
-      if (prevValue === undefined) return;
+      // No updates if map isn't ready yet (values are default)
+      if (this.mapReady === false) return;
 
       // These are new active layers
       for (let i = 0; i < nextValue.length; i++) {
         if (!prevValue.includes(nextValue[i])) {
-          this.$emit("update:filter", "layer", nextValue[i], true);
+          this.$emit("update:filter", "layer", {
+            layerName: nextValue[i],
+            show: true,
+          });
         }
       }
 
       // Layers to remove
       for (let i = 0; i < prevValue.length; i++) {
         if (!nextValue.includes(prevValue[i])) {
-          this.$emit("update:filter", "layer", prevValue[i], false);
+          this.$emit("update:filter", "layer", {
+            layerName: prevValue[i],
+            show: false,
+          });
         }
       }
 
@@ -445,32 +560,44 @@ export default {
       this.addQueryParam("layers", `${nextValue}`);
     },
 
-    /*------ 
-    Handle updates to the selected overlay layer
-    -------*/
+    /**
+     * Handle updates to the selected overlay layer
+     */
     selectedOverlay(nextValue, prevValue) {
       // Do nothing if it didn't change
       if (prevValue === nextValue) return;
 
       // Remove old agg layer
       if (prevValue !== null)
-        this.$emit("update:filter", "layer", prevValue, false);
+        this.$emit("update:filter", "layer", {
+          layerName: prevValue,
+          show: false,
+        });
 
       // No agg layers selected now
       if (nextValue == null) {
         // Restore any selected non-agg layers
         for (let i = 0; i < this.selectedLayers.length; i++) {
-          this.$emit("update:filter", "layer", this.selectedLayers[i], true);
+          this.$emit("update:filter", "layer", {
+            layerName: this.selectedLayers[i],
+            show: true,
+          });
         }
       }
       // New agg layer selected, add new
       else {
-        this.$emit("update:filter", "layer", nextValue, true);
+        this.$emit("update:filter", "layer", {
+          layerName: nextValue,
+          show: true,
+        });
 
         // New agg layer means we need to hide old selected layers from map
         if (prevValue === null) {
           for (let i = 0; i < this.selectedLayers.length; i++) {
-            this.$emit("update:filter", "layer", this.selectedLayers[i], false);
+            this.$emit("update:filter", "layer", {
+              layerName: this.selectedLayers[i],
+              show: false,
+            });
           }
         }
       }
@@ -481,10 +608,10 @@ export default {
     },
   },
   methods: {
-    /*------ 
-    Add the specified query parameter to the URL
-    -------*/
-    addQueryParam(key, value) {
+    /**
+     * Add the specified query parameter to the URL
+     */
+    addQueryParam(key: string, value: string) {
       // Copy existing query
       let q = Object.assign({}, this.$route.query);
 
@@ -500,10 +627,10 @@ export default {
       }
     },
 
-    /*------ 
-    Remove a query parameter from the URL
-    -------*/
-    removeQueryParam(key) {
+    /**
+     * Remove a query parameter from the URL
+     */
+    removeQueryParam(key: string) {
       // Copy and delete
       let q = Object.assign({}, this.$route.query);
 
@@ -518,50 +645,51 @@ export default {
       }
     },
 
-    /*------ 
-    Parse the initial query string parameters
-    -------*/
+    /**
+     * Parse the initial query string parameters
+     */
     parseInitialQuery() {
       // The allowed keys
-      let keys = ["layers", "overlay", "f", "excludeUnknown"];
+      let keys = ["layers", "overlay", "f", "excludeMissing"];
 
       // Parse each one
       for (let i = 0; i < keys.length; i++) {
         let key = keys[i];
 
         // Get the parsed value
-        if (this.$route.query[key]) {
-          if (key == "overlay") this.initialQuery[key] = this.$route.query[key];
-          else if (key == "layers")
-            this.initialQuery[key] = this.$route.query[key].split(",");
+        let value = this.$route.query[key] as string;
+        if (value) {
+          if (key == "overlay") this.initialQuery[key] = value;
+          else if (key == "layers") this.initialQuery[key] = value.split(",");
           else
-            this.initialQuery[key] = qs.parse(this.$route.query[key], {
+            this.initialQuery[key] = qs.parse(value, {
               ignoreQueryPrefix: true,
               arrayFormat: "bracket",
               decoder: queryStringDecoder,
-            });
+            } as qs.IParseOptions);
         }
       }
     },
 
-    /*------ 
-    Based on sidebar width, get the width of the histogram
-    -------*/
+    /**
+     * Based on sidebar width, get the width of the histogram
+     */
     getHistogramWidth() {
-      return ($(".sidebar-inner-content").width() - 48) * 0.85;
+      let width = $(".sidebar-inner-content").width();
+      if (width) return (width - 48) * 0.85;
     },
 
-    /*------ 
-    Get the min-width css parameter for checkbox lists
-    -------*/
-    getMinWidthForCheckboxFilter(ncol) {
+    /**
+     * Get the min-width css parameter for checkbox lists
+     */
+    getMinWidthForCheckboxFilter(ncol: number) {
       let p = 100 / ncol;
       return `min-width: ${p}%`;
     },
 
-    /*------ 
-    Initialize the filters
-    -------*/
+    /**
+     * Initialize the filters
+     */
     initializeFilters() {
       for (let i = 0; i < this.filters.length; i++) {
         // Set the default value
@@ -570,25 +698,25 @@ export default {
         this.$set(this.isDefault, item.name, true);
 
         // Set the exclude unknown value
-        if (item.excludeUnknown) {
-          this.$set(this.excludeUnknownValues, item.name, false);
+        if ("excludeMissing" in item && item.excludeMissing) {
+          this.$set(this.excludeMissingValues, item.name, false);
 
           // Watch for changes
           this.$watch(
-            () => this.excludeUnknownValues[item.name],
+            () => this.excludeMissingValues[item.name],
             () => {
               // Update query string with non-default parameters
-              let newValue = {};
-              for (let name in this.excludeUnknownValues) {
-                if (this.excludeUnknownValues[name]) newValue[name] = true;
+              let newValue = {} as indexable;
+              for (let name in this.excludeMissingValues) {
+                if (this.excludeMissingValues[name]) newValue[name] = true;
               }
-              newValue = qs.stringify(newValue);
+              let newValueString = qs.stringify(newValue);
 
               // Update route with new query string
-              if (newValue !== this.$route.query["excludeUnknown"]) {
+              if (newValueString !== this.$route.query["excludeMissing"]) {
                 if (Object.keys(newValue).length > 0)
-                  this.addQueryParam("excludeUnknown", newValue);
-                else this.removeQueryParam("excludeUnknown");
+                  this.addQueryParam("excludeMissing", newValueString);
+                else this.removeQueryParam("excludeMissing");
               }
             }
           );
@@ -606,17 +734,17 @@ export default {
             );
 
             // Update query string with non-default parameters
-            let newValue = {};
+            let newValue = {} as indexable;
             for (let name in this.selectedValues) {
               if (!this.isDefault[name])
                 newValue[name] = this.selectedValues[name];
             }
-            newValue = qs.stringify(newValue);
+            let newValueString = qs.stringify(newValue);
 
             // Update route with new query string
-            if (newValue !== this.$route.query["f"]) {
+            if (newValueString !== this.$route.query["f"]) {
               if (Object.keys(newValue).length > 0)
-                this.addQueryParam("f", newValue);
+                this.addQueryParam("f", newValueString);
               else this.removeQueryParam("f");
             }
           }
@@ -624,21 +752,27 @@ export default {
       }
     },
 
-    /*------ 
-    Determine the slider tooltips based on slider width vs. default width
-    -------*/
-    getTooltipPlacement(name) {
+    /**
+     * Determine the slider tooltips based on slider width vs. default width
+     */
+    getTooltipPlacement(name: string) {
       // Values
       let value = this.selectedValues[name];
       let defaultValue = this.getDefaultValue(name);
 
-      let width = defaultValue[1] - defaultValue[0];
-      let f = (value[1] - value[0]) / width;
-      if (f < 0.35) return ["top", "bottom"];
-      else return ["bottom", "bottom"];
+      // Make sure it's an array
+      if (Array.isArray(defaultValue)) {
+        // We have two numbers
+        defaultValue = defaultValue as number[];
+
+        let width = defaultValue[1] - defaultValue[0];
+        let f = (value[1] - value[0]) / width;
+        if (f < 0.35) return ["top", "bottom"];
+        else return ["bottom", "bottom"];
+      }
     },
 
-    /*------ 
+    /*------
     Initialize slider filters
     -------*/
     initializeSliders() {
@@ -666,31 +800,29 @@ export default {
       }
     },
 
-    /*------ 
-    Emit a filter event when filter changes
-    -------*/
-    handleFilterChange(filterName, value) {
+    /**
+     * Emit a filter event when filter changes
+     */
+    handleFilterChange(filterName: string, value: any) {
       // Include excluded values flag
       if (
         Object.prototype.hasOwnProperty.call(
-          this.excludeUnknownValues,
+          this.excludeMissingValues,
           filterName
         )
       ) {
-        this.$emit(
-          "update:filter",
-          filterName,
-          value,
-          this.excludeUnknownValues[filterName]
-        );
+        this.$emit("update:filter", filterName, {
+          value: value,
+          excludeMissing: this.excludeMissingValues[filterName],
+        });
       }
       // Just send the updated value
-      else this.$emit("update:filter", filterName, value);
+      else this.$emit("update:filter", filterName, { value: value });
     },
 
-    /*------ 
-    Reset all of the filters to their default values
-    -------*/
+    /**
+     * Reset all of the filters to their default values
+     */
     resetAllFilters() {
       // These are the filters that can be reset
       let filters = this.resetableFilters;
@@ -711,8 +843,8 @@ export default {
           }
 
           // Reset the exclude unknown value
-          if (filter.excludeUnknown) {
-            this.excludeUnknownValues[filter.name] = false;
+          if ("excludeMissing" in filter && filter.excludeMissing) {
+            this.excludeMissingValues[filter.name] = false;
             filtersToReset.push(filter.name);
           }
         }
@@ -724,10 +856,10 @@ export default {
       });
     },
 
-    /*------ 
-    Check if the input value is the same as the default
-    -------*/
-    isNotDefault(defaultValue, value) {
+    /**
+     * Check if the input value is the same as the default
+     */
+    isNotDefault(defaultValue: any, value: any) {
       // No value, then it's got to be default
       if (value == null || value == undefined) return false;
 
@@ -740,28 +872,28 @@ export default {
       } else return defaultValue !== value;
     },
 
-    /*------ 
-    Should we show the reset link for the specific filter
-    -------*/
-    showReset(filterName) {
+    /**
+     * Should we show the reset link for the specific filter
+     */
+    showReset(filterName: string) {
       // Test for exclude values
       if (
         Object.prototype.hasOwnProperty.call(
-          this.excludeUnknownValues,
+          this.excludeMissingValues,
           filterName
         )
       ) {
-        if (this.excludeUnknownValues[filterName]) return true;
+        if (this.excludeMissingValues[filterName]) return true;
       }
 
       // Test for default value
       return !this.isDefault[filterName];
     },
 
-    /*------ 
-    Handle the click on a checkbox
-    -------*/
-    handleCheckboxClick(event) {
+    /**
+     * Handle the click on a checkbox
+     */
+    handleCheckboxClick(event: Event) {
       if (this.onlyClick) {
         event.stopPropagation();
         event.preventDefault();
@@ -769,73 +901,75 @@ export default {
       }
     },
 
-    /*------ 
-    Handle the click on a reset link
-    -------*/
-    handleResetClick(event, filterName) {
+    /**
+     * Handle the click on a reset link
+     */
+    handleResetClick(event: Event, filterName: string) {
       // Stop button from expanding
       event.stopPropagation();
       event.preventDefault();
       this.resetFilter(filterName);
     },
 
-    /*------ 
-    Reset the specified filter
-    -------*/
-    resetFilter(filterName) {
+    /**
+     * Reset the specified filter
+     */
+    resetFilter(filterName: string) {
       // Reset filter
       this.selectedValues[filterName] = this.getDefaultValue(filterName);
 
       // Reset the exclude unknown value
       if (
         Object.prototype.hasOwnProperty.call(
-          this.excludeUnknownValues,
+          this.excludeMissingValues,
           filterName
         )
       ) {
-        this.excludeUnknownValues[filterName] = false;
+        this.excludeMissingValues[filterName] = false;
       }
 
       // Handle filter value change
       this.handleFilterChange(filterName, this.selectedValues[filterName]);
     },
 
-    /*------ 
-    Get the default value 
-    -------*/
-    getDefaultValue(filterName) {
-      return this.filters.find((filter) => filter.name === filterName).default;
+    /**
+     * Get the default value
+     */
+    getDefaultValue(filterName: string) {
+      let filter = this.filters.find((filter) => filter.name === filterName);
+      if (filter) return filter.default;
     },
 
-    /*------ 
-    Handle click to the "Only" button
-    -------*/
-    handleOnlyClick(event, filterName, value) {
+    /**
+     * Handle click to the "Only" button
+     */
+    handleOnlyClick(event: Event, filterName: string, value: any) {
       this.onlyClick = true;
       this.selectedValues[filterName] = [value];
       this.handleFilterChange(filterName, [value]);
     },
 
-    /*------ 
-    Handle click to the "Only" button for layers
-    -------*/
-    handleOnlyClickLayer(event, value) {
+    /**
+     * Handle click to the "Only" button for layers
+     */
+    handleOnlyClickLayer(event: Event, value: any) {
       this.onlyClick = true;
       this.selectedLayers = [value];
     },
 
-    /*------ 
-    Utility to format a number
-    -------*/
-    formatNumber(d) {
+    /**
+     * Utility to format a number
+     */
+    formatNumber(d: number) {
       return format(",.0f")(d);
     },
   },
+
   computed: {
-    /*------ 
-    These filters are able to be reset
-    -------*/
-    resetableFilters() {
+    /**
+     * Determine which filters can be reset
+     */
+    resetableFilters(): string[] {
       let filters = [
         this.switchFilters,
         this.checkboxFilters,
@@ -850,30 +984,36 @@ export default {
       return out;
     },
 
-    /*------ 
-    The switch filters
-    -------*/
-    switchFilters() {
-      return this.filters.filter((d) => d.kind == "switch");
+    /**
+     * The switch filters
+     */
+    switchFilters(): SwitchFilterConfig[] {
+      return this.filters.filter(
+        (d) => d.kind == "switch"
+      ) as SwitchFilterConfig[];
     },
 
-    /*------ 
-    The checkbox filters
-    -------*/
-    checkboxFilters() {
-      return this.filters.filter((d) => d.kind == "checkbox");
+    /**
+     * The checkbox filters
+     */
+    checkboxFilters(): CheckboxFilterConfig<number | string>[] {
+      return this.filters.filter(
+        (d) => d.kind == "checkbox"
+      ) as CheckboxFilterConfig<number | string>[];
     },
 
-    /*------ 
-    The slider filters
-    -------*/
-    sliderFilters() {
-      return this.filters.filter((d) => d.kind == "slider");
+    /**
+     * The slider filters
+     */
+    sliderFilters(): SliderFilterConfig[] {
+      return this.filters.filter(
+        (d) => d.kind == "slider"
+      ) as SliderFilterConfig[];
     },
 
-    /*------ 
-    Should we show the reset all button?
-    -------*/
+    /**
+     * Should we show the reset all button?
+     */
     showResetAllButton() {
       for (let i = 0; i < this.resetableFilters.length; i++) {
         let name = this.resetableFilters[i];
@@ -882,14 +1022,14 @@ export default {
       return false;
     },
 
-    /*------ 
-    How many points are missing?
-    -------*/
-    missingPoints() {
+    /**
+     * How many points are missing?
+     */
+    missingPoints(): number {
       return this.filteredSize - this.pointsOnMap;
     },
   },
-};
+});
 </script>
 
 <style>

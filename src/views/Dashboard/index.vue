@@ -22,7 +22,7 @@
     <!-- Display dashboard when data is loaded -->
     <div v-if="data !== null">
       <!-- Map -->
-      <!-- <mapping-dashboard
+      <mapping-dashboard
         ref="MappingDashboard"
         :data="data"
         :filters="filters"
@@ -34,10 +34,10 @@
         marker-short-title="victim"
         @update:filtered-data="filteredFeatures = $event"
         @map:ready="mapReady = true"
-      /> -->
+      />
 
       <!-- Charts -->
-      <!-- <chart-dashboard ref="ChartDashboard" :filtered-data="filteredFeatures" /> -->
+      <chart-dashboard ref="ChartDashboard" :filtered-data="filteredFeatures" />
     </div>
   </div>
 </template>
@@ -49,7 +49,8 @@ import { Route, NavigationGuardNext } from "vue-router";
 
 // Local
 import MappingDashboard from "@/components/MappingDashboard/index.vue";
-import ChartDashboard from "./ChartDashboard.vue";
+import FilterableMap from "@/components/MappingDashboard/FilterableMap.vue";
+import ChartDashboard from "./ChartDashboard/index.vue";
 import HeaderMessage from "./HeaderMessage.vue";
 import Navbar from "@/components/Navbar.vue";
 import {
@@ -119,7 +120,7 @@ export default defineComponent({
       /**
        * Whether the data is still loading
        */
-      isLoading: true, //
+      isLoading: true,
 
       /**
        * Whether the map is initialized
@@ -190,7 +191,15 @@ export default defineComponent({
      */
     downloadConfig(): DownloadConfig {
       return {
-        exclude: ["segment_id", "latino", "age_group", "dateInMs", "timeInMs"],
+        rename: { school_name: "school_catchment" },
+        exclude: [
+          "segment_id",
+          "latino",
+          "age_group",
+          "dateInMs",
+          "timeInMs",
+          "unique_id",
+        ],
         formatters: {
           race: (d: RaceValues) => {
             let aliases = {
@@ -231,10 +240,11 @@ export default defineComponent({
           aggregated: true,
           overlay: true,
           column: "police_district",
-          geoid: "DISTRICT_",
+          geoid: "police_district",
           tooltip: {
-            formatter: this.tooltipFunction(
-              (d: { DISTRICT_: string }) => `Police District #${d.DISTRICT_}`
+            formatter: this.aggregatedLayerTooltip(
+              (d: { police_district: string }) =>
+                `Police District #${d.police_district}`
             ),
             on: "mousemove",
           },
@@ -246,10 +256,11 @@ export default defineComponent({
           aggregated: true,
           overlay: true,
           column: "council_district",
-          geoid: "DISTRICT",
+          geoid: "council_district",
           tooltip: {
-            formatter: this.tooltipFunction(
-              (d: { DISTRICT: number }) => `Council District #${d.DISTRICT}`
+            formatter: this.aggregatedLayerTooltip(
+              (d: { council_district: number }) =>
+                `Council District #${d.council_district}`
             ),
             on: "mousemove",
           },
@@ -263,7 +274,7 @@ export default defineComponent({
           column: "zip_code",
           geoid: "zip_code",
           tooltip: {
-            formatter: this.tooltipFunction(
+            formatter: this.aggregatedLayerTooltip(
               (d: { zip_code: number }) => `${d.zip_code}`
             ),
             on: "mousemove",
@@ -278,7 +289,7 @@ export default defineComponent({
           column: "neighborhood",
           geoid: "neighborhood",
           tooltip: {
-            formatter: this.tooltipFunction(
+            formatter: this.aggregatedLayerTooltip(
               (d: { neighborhood: string }) => d.neighborhood
             ),
             on: "mousemove",
@@ -291,10 +302,11 @@ export default defineComponent({
           aggregated: true,
           overlay: true,
           column: "house_district",
-          geoid: "district",
+          geoid: "house_district",
           tooltip: {
-            formatter: this.tooltipFunction(
-              (d: { district: number }) => `House District #${d.district}`
+            formatter: this.aggregatedLayerTooltip(
+              (d: { house_district: number }) =>
+                `House District #${d.house_district}`
             ),
             on: "mousemove",
           },
@@ -306,10 +318,11 @@ export default defineComponent({
           aggregated: true,
           overlay: true,
           column: "senate_district",
-          geoid: "district",
+          geoid: "senate_district",
           tooltip: {
-            formatter: this.tooltipFunction(
-              (d: { district: number }) => `Senate District #${d.district}`
+            formatter: this.aggregatedLayerTooltip(
+              (d: { senate_district: number }) =>
+                `Senate District #${d.senate_district}`
             ),
             on: "mousemove",
           },
@@ -321,10 +334,10 @@ export default defineComponent({
           aggregated: true,
           overlay: true,
           column: "school_name",
-          geoid: "name",
+          geoid: "school_name",
           tooltip: {
-            formatter: this.tooltipFunction(
-              (d: { name: string }) => `${d.name}`
+            formatter: this.aggregatedLayerTooltip(
+              (d: { school_name: string }) => `${d.school_name}`
             ),
             on: "mousemove",
           },
@@ -347,83 +360,23 @@ export default defineComponent({
           paint: {
             "circle-radius": this.getCircleRadiusStyle(),
             "circle-color": [
-              "match",
-              ["get", "fatal"],
-              1,
+              "case",
+              ["boolean", ["get", "fatal"], false],
               "#d84545",
               "#e5dc8e",
             ],
             "circle-stroke-width": 1,
             "circle-opacity": 0.7,
             "circle-stroke-color": [
-              "match",
-              ["get", "fatal"],
-              1,
+              "case",
+              ["boolean", ["get", "fatal"], false],
               "#af2828",
               "#d3c913",
             ],
           },
           tooltip: {
-            on: "mouseover",
-            formatter: (data: ShootingVictimsProperties) => {
-              let aliases = {
-                W: "White (Non-Hispanic)",
-                B: "Black (Non-Hispanic)",
-                H: "Hispanic (Black or White)",
-                M: "Male",
-                F: "Female",
-                A: "Asian",
-              };
-              let fatal = data.fatal ? "Fatal" : "Nonfatal";
-              let arrest = data.has_court_case ? "Yes" : "No";
-              let text = `<div class='map-tooltip'>
-              <div class="map-tooltip__title">${fatal} Shooting</div>
-              <table class="w-100">
-                <tbody>
-                  <tr class="map-tooltip__line">
-                      <td>${new Date(data.date).toDateString()}</td>
-                    </tr>
-                  <tr class="map-tooltip__line">
-                    <td>${msToTimeString(data.timeInMs)}</td>
-                  </tr>
-                  <tr class="map-tooltip__line">
-                    <td>${data.block_number} ${data.street_name}</td>
-                  </tr>
-                </tbody>
-              </table>
-              <div class="map-tooltip__title mt-2">Victim Info</div>
-              <table class="w-100">
-                <tbody>`;
-
-              if (data.age !== null)
-                text += `<tr class="map-tooltip__line">
-                    <td>${data.age} years old</td>
-                  </tr>`;
-
-              if (data.race !== "Other/Unknown")
-                text += `<tr class="map-tooltip__line">
-                    <td>${aliases[data.race]}</td>
-                  </tr>`;
-
-              text += `<tr class="map-tooltip__line">
-                    <td>${aliases[data.sex]}</td>
-                  </tr>
-                </tbody>
-              </table>
-              <div class="map-tooltip__title mt-2">Incident Info</div>
-              <table class="w-100">
-                <tbody>
-                  <tr class="map-tooltip__line">
-                    <td>DC #: ${data.dc_key}</td>
-                  </tr>
-                  <tr class="map-tooltip__line">
-                    <td>Court Case: ${arrest}</td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>`;
-              return text;
-            },
+            on: "mouseenter",
+            formatter: this.pointsLayerTooltip,
           },
         },
         {
@@ -511,7 +464,7 @@ export default defineComponent({
             ],
           },
           tooltip: {
-            formatter: this.tooltipFunction(
+            formatter: this.aggregatedLayerTooltip(
               (d: { block_number: number; street_name: string }) =>
                 `${d.block_number} ${d.street_name}`
             ),
@@ -526,49 +479,59 @@ export default defineComponent({
      */
     sources(): SourceConfig[] {
       return [
-        { name: "shootings", data: this.data, filterColumn: "dc_key" },
+        {
+          name: "shootings",
+          data: this.data,
+          // NOTE: THIS MUST BE UNIQUE
+          filterColumn: "unique_id",
+        },
         {
           name: "city-limits-geo",
           url: "https://services.arcgis.com/fLeGjb7u4uXqeF9q/arcgis/rest/services/City_Limits/FeatureServer/0",
         },
         {
           name: "police-district-geo",
-          url: "https://services.arcgis.com/fLeGjb7u4uXqeF9q/arcgis/rest/services/Boundaries_District/FeatureServer/0",
-          outFields: ["DISTRICT_"],
+          url: "https://services.arcgis.com/fLeGjb7u4uXqeF9q/arcgis/rest/services/Gun_Violence_Dashboard_Police_Districts/FeatureServer/0",
+          outFields: ["police_district"],
+          formatter: { police_district: (d: number | string) => `${d}` },
         },
         {
           name: "council-district-geo",
-          url: "https://services.arcgis.com/fLeGjb7u4uXqeF9q/arcgis/rest/services/Council_Districts_2016/FeatureServer/0",
-          outFields: ["DISTRICT"],
+          url: "https://services.arcgis.com/fLeGjb7u4uXqeF9q/arcgis/rest/services/Gun_Violence_Dashboard_Council_Districts/FeatureServer/0",
+          outFields: ["council_district"],
+          formatter: { council_district: (d: number | string) => `${d}` },
         },
         {
           name: "zip-code-geo",
-          url: "https://services.arcgis.com/fLeGjb7u4uXqeF9q/arcgis/rest/services/Philadelphia_ZCTA_2018/FeatureServer/0",
+          url: "https://services.arcgis.com/fLeGjb7u4uXqeF9q/arcgis/rest/services/Gun_Violence_Dashboard_ZIP_Codes/FeatureServer/0",
           outFields: ["zip_code"],
+          formatter: { zip_code: (d: number | string) => `${d}` },
         },
         {
           name: "neighborhood-geo",
-          url: "https://services.arcgis.com/fLeGjb7u4uXqeF9q/arcgis/rest/services/Philly_NTAs/FeatureServer/0",
+          url: "https://services.arcgis.com/fLeGjb7u4uXqeF9q/arcgis/rest/services/Gun_Violence_Dashboard_Neighborhoods/FeatureServer/0",
           outFields: ["neighborhood"],
         },
         {
           name: "senate-district-geo",
-          url: "https://services.arcgis.com/fLeGjb7u4uXqeF9q/arcgis/rest/services/PA_Senate_Districts/FeatureServer/0",
-          outFields: ["district"],
+          url: "https://services.arcgis.com/fLeGjb7u4uXqeF9q/arcgis/rest/services/Gun_Violence_Dashboard_PA_Senate_Districts/FeatureServer/0",
+          outFields: ["senate_district"],
+          formatter: { senate_district: (d: number | string) => `${d}` },
         },
         {
           name: "house-district-geo",
-          url: "https://services.arcgis.com/fLeGjb7u4uXqeF9q/arcgis/rest/services/PA_House_Districts/FeatureServer/0",
-          outFields: ["district"],
+          url: "https://services.arcgis.com/fLeGjb7u4uXqeF9q/arcgis/rest/services/Gun_Violence_Dashboard_PA_House_Districts/FeatureServer/0",
+          outFields: ["house_district"],
+          formatter: { house_district: (d: number | string) => `${d}` },
         },
         {
           name: "elementary-school-geo",
-          url: "https://services.arcgis.com/fLeGjb7u4uXqeF9q/ArcGIS/rest/services/Philadelphia_Elementary_School_Catchments_SY_2019_2020/FeatureServer/0",
-          outFields: ["name"],
+          url: "https://services.arcgis.com/fLeGjb7u4uXqeF9q/ArcGIS/rest/services/Gun_Violence_Dashboard_School_Catchments/FeatureServer/0",
+          outFields: ["school_name"],
         },
         {
           name: "streets-geo",
-          url: "https://services.arcgis.com/fLeGjb7u4uXqeF9q/arcgis/rest/services/Philadelphia_Streets/FeatureServer/0",
+          url: "https://services.arcgis.com/fLeGjb7u4uXqeF9q/arcgis/rest/services/Gun_Violence_Dashboard_Streets/FeatureServer/0",
           outFields: ["segment_id", "street_name", "block_number"],
           whereColumn: "segment_id",
           filterColumn: "segment_id",
@@ -647,7 +610,7 @@ export default defineComponent({
           ncol: 2,
         },
         {
-          name: "time",
+          name: "timeInMs",
           label: "Time of Day",
           getFilter: (value) => [value[0], value[1] + 1],
           kind: "slider",
@@ -662,7 +625,7 @@ export default defineComponent({
           },
         },
         {
-          name: "date",
+          name: "dateInMs",
           label: "Date",
           getFilter: (value) => {
             let start = new Date(value[0]);
@@ -715,7 +678,7 @@ export default defineComponent({
   },
   watch: {
     /**
-     * Track the previous route when it changes
+     * Track the previous route when it changes and save it
      */
     $route: {
       handler(to: Route, from: Route) {
@@ -788,11 +751,12 @@ export default defineComponent({
     },
 
     /**
-     * Return a function that generates the tooltip string from the data.
+     * Return a function that generates the tooltip string for
+     * an aggregated layer from the data.
      *
      * @param titleFunc A function that returns the tooltip title
      */
-    tooltipFunction(titleFunc: TitleFunction): (data: any) => string {
+    aggregatedLayerTooltip(titleFunc: TitleFunction): (data: any) => string {
       return (data) => {
         // Get the total count
         let count = data["count"];
@@ -816,6 +780,72 @@ export default defineComponent({
     },
 
     /**
+     * Return a function that generates the tooltip string for
+     * the points layer from the data.
+     *
+     * @param titleFunc A function that returns the tooltip title
+     */
+    pointsLayerTooltip(data: ShootingVictimsProperties) {
+      let aliases = {
+        W: "White (Non-Hispanic)",
+        B: "Black (Non-Hispanic)",
+        H: "Hispanic (Black or White)",
+        M: "Male",
+        F: "Female",
+        A: "Asian",
+      };
+      let fatal = data.fatal ? "Fatal" : "Nonfatal";
+      let arrest = data.has_court_case ? "Yes" : "No";
+      let text = `<div class='map-tooltip'>
+              <div class="map-tooltip__title">${fatal} Shooting</div>
+              <table class="w-100">
+                <tbody>
+                  <tr class="map-tooltip__line">
+                      <td>${new Date(data.date).toDateString()}</td>
+                    </tr>
+                  <tr class="map-tooltip__line">
+                    <td>${msToTimeString(data.timeInMs)}</td>
+                  </tr>
+                  <tr class="map-tooltip__line">
+                    <td>${data.block_number} ${data.street_name}</td>
+                  </tr>
+                </tbody>
+              </table>
+              <div class="map-tooltip__title mt-2">Victim Info</div>
+              <table class="w-100">
+                <tbody>`;
+
+      if (data.age)
+        text += `<tr class="map-tooltip__line">
+                    <td>${data.age} years old</td>
+                  </tr>`;
+
+      if (data.race !== "Other/Unknown")
+        text += `<tr class="map-tooltip__line">
+                    <td>${aliases[data.race]}</td>
+                  </tr>`;
+
+      text += `<tr class="map-tooltip__line">
+                    <td>${aliases[data.sex]}</td>
+                  </tr>
+                </tbody>
+              </table>
+              <div class="map-tooltip__title mt-2">Incident Info</div>
+              <table class="w-100">
+                <tbody>
+                  <tr class="map-tooltip__line">
+                    <td>DC #: ${data.dc_key}</td>
+                  </tr>
+                  <tr class="map-tooltip__line">
+                    <td>Court Case: ${arrest}</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>`;
+      return text;
+    },
+
+    /**
      * Fetch the data for the specified year
      *
      * @param year the year of the data to fetch
@@ -832,7 +862,7 @@ export default defineComponent({
 
       // Loop over features
       data.features.forEach(
-        (d: Feature<Point | null, ShootingVictimsProperties>) => {
+        (d: Feature<Point | null, ShootingVictimsProperties>, i: number) => {
           // Parse the date
           let dt = parseTime(d.properties["date"]);
 
@@ -843,6 +873,9 @@ export default defineComponent({
             d.properties["timeInMs"] = getMsSinceMidnight(ms);
             d.properties["weekday"] = dt.getDay();
           }
+
+          // Add the unique identifier
+          d.properties["unique_id"] = i;
         }
       );
 
@@ -867,7 +900,7 @@ export default defineComponent({
 
       // Fetch or set
       let data;
-      if (newYear !== null) {
+      if (newYear) {
         data = this.store[newYear] = await this.getDataForYear(newYear);
       }
       // Handle all years
@@ -884,7 +917,7 @@ export default defineComponent({
         data = Object.assign({}, this.store[this.dataYears[0]]);
         for (let i = 1; i < this.dataYears.length; i++) {
           let year = this.dataYears[i];
-          data.features.concat(this.store[year].features);
+          data.features = data.features.concat(this.store[year].features);
         }
       }
 
@@ -895,29 +928,34 @@ export default defineComponent({
       // Make sure everything else has updated
       this.$nextTick(() => {
         // The dashboard
-        let dashboard = this.$refs.MappingDashboard;
+        let dashboard = this.$refs.MappingDashboard as InstanceType<
+          typeof MappingDashboard
+        >;
         if (dashboard === undefined) throw Error("Dashboard not found");
 
         // Reset all the filters to default values
-        //dashboard.resetDashboard();
+        dashboard.resetDashboard();
 
         // Wait for reset to propagate
         this.$nextTick(() => {
           // Set the filtered data
-          //this.filteredFeatures = dashboard.filteredData;
+          this.filteredFeatures =
+            dashboard.filteredData as ShootingVictimsFeatures;
 
           // Update the map
-          //let map = dashboard.$refs.FilterableMap;
-          // if (map.getLayer("Point locations")) {
-          //   map.setPaintProperty(
-          //     "Point locations",
-          //     "circle-radius",
-          //     this.getCircleRadiusStyle()
-          //   );
-          // }
+          let map = dashboard.$refs.FilterableMap as InstanceType<
+            typeof FilterableMap
+          >;
+          if (dashboard.mapReady && map.getLayer("Point locations")) {
+            map.setPaintProperty(
+              "Point locations",
+              "circle-radius",
+              this.getCircleRadiusStyle()
+            );
+          }
 
           // Update sliders in the dashboard
-          //dashboard.setDefaultSliderRanges();
+          dashboard.setDefaultSliderRanges();
 
           // Update variables for the header message
           if (this.filteredFeatures !== null)

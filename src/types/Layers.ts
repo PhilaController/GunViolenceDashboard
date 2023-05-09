@@ -1,54 +1,28 @@
 export type TitleFunction = (data: any) => string;
 
-export interface AggregatedLayerConfig {
+interface BaseLayerConfig {
   /** Display name */
   name: string;
   /** Name of the map source */
   source: string;
-  /** Type of map layer */
-  type: "fill";
-  /** Aggregated layer */
-  aggregated: true;
+  /** Aggregated layer? */
+  aggregated: true | false;
+  /** The map paint object */
+  paint?: object;
   /** Is this layer an overlay option? */
   overlay?: true | false;
   /** Should we show this layer initially? */
   showOnStart?: true | false;
-  /** The name of the data column */
-  column: string;
-  /** The name of the column in the geo data to match on */
-  geoid: string;
-  /** Tooltip configuration */
-  tooltip?: {
-    formatter: (data: object) => string;
-    on: "mousemove" | "mouseover";
-  };
-}
-
-export interface MapLayerConfig {
-  /** Display name */
-  name: string;
-  /** Name of the map source */
-  source: string;
-  /** Type of map layer */
-  type: "line" | "fill" | "circle" | "heatmap";
-  /** Aggregated layer */
-  aggregated: true | false;
-  /** The name of the data column */
-  column?: string;
-  /** Show this layer before a specific layer ID */
-  beforeId?: string;
-  /** The name of the column in the geo data to match on */
-  geoid?: string;
-  /** The map paint object */
-  paint?: object;
   /** Is this layer static */
   static?: true | false;
-  /** Should we show this layer initially? */
-  showOnStart?: true | false;
+  /** The name of the data column */
+  column?: string;
+  /** The name of the column in the geo data to match on */
+  geoid?: string;
   /** Tooltip configuration */
   tooltip?: {
     formatter: (data: any) => string;
-    on: "mousemove" | "mouseover";
+    on: "mousemove" | "mouseenter";
   };
   /** Config for the legend */
   legend?: {
@@ -56,6 +30,24 @@ export interface MapLayerConfig {
     scaleName: string;
     colorRange: [number, number];
   };
+  /** Show this layer before a specific layer ID */
+  beforeId?: string;
+}
+
+export interface AggregatedLayerConfig extends BaseLayerConfig {
+  /** Aggregated layer */
+  aggregated: true;
+  /** The name of the data column */
+  column: string;
+  /** The name of the column in the geo data to match on */
+  geoid: string;
+  /** Type of map layer */
+  type: "fill";
+}
+
+export interface MapLayerConfig extends BaseLayerConfig {
+  /** Type of map layer */
+  type: "line" | "circle" | "heatmap";
 }
 
 export type LayerConfig = AggregatedLayerConfig | MapLayerConfig;

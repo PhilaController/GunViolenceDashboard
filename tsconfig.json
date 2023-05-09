@@ -1,4 +1,14 @@
 {
+  "vueCompilerOptions": {
+    "experimentalModelPropName": {
+      "checked": {
+        "input": {
+          "type": "checkbox"
+        },
+        "v-checkbox": true
+      }
+    },
+  },
   "compilerOptions": {
     "allowJs": true, // For a hybrid project
     "resolveJsonModule": true, // For allowing importing JSON

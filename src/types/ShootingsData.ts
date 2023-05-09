@@ -10,6 +10,7 @@ export type AgeGroupValues =
   | "Unknown";
 
 export interface ShootingVictimsProperties {
+  [key: string]: any;
   /**
    * The unique incident number
    */
@@ -102,7 +103,9 @@ export type ShootingVictimsGeoJson = FeatureCollection<
   ShootingVictimsProperties
 >;
 
-export type ShootingVictimsFeatures = Feature<
+export type ShootingVictimsFeature = Feature<
   Point | null,
   ShootingVictimsProperties
->[];
+>;
+
+export type ShootingVictimsFeatures = ShootingVictimsFeature[];
